@@ -13,14 +13,6 @@ const portfolioImages = [
 const Portfolio: React.FC = () => {
     return (
         <section id="portfolio" className="relative py-20 lg:py-32 overflow-hidden">
-            {/* Watercolor SVG filter background */}
-            <svg width="0" height="0" style={{ position: 'absolute' }}>
-                <filter id="watercolor-portfolio">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.01 0.03" numOctaves="3" result="noise" />
-                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="100" />
-                </filter>
-            </svg>
-
             <div className="absolute inset-0 pointer-events-none opacity-20">
                 <div className="splotch splotch-1"></div>
                 <div className="splotch splotch-2"></div>

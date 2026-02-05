@@ -6,32 +6,13 @@ import WetPaintButton from '../ui/WetPaintButton';
 const Hero: React.FC = () => {
     return (
         <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-midtown-light via-white to-blue-50">
-            {/* Watercolor Paint Splash Background */}
-            <svg width="0" height="0" style={{ position: 'absolute' }}>
-                <defs>
-                    <filter id="watercolor-bleed">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.01 0.03" numOctaves="4" seed="2" result="noise" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="120" />
-                    </filter>
-                    <filter id="watercolor-bleed-2">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.015 0.025" numOctaves="3" seed="5" result="noise" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="90" />
-                    </filter>
-                </defs>
-            </svg>
-
-            {/* Animated Watercolor Canvas */}
+            {/* Animated Watercolor Canvas - CSS only, no SVG filters for performance */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none watercolor-canvas">
-                {/* Large vibrant pink/magenta splotch */}
-                <div className="splotch splotch-pink" style={{ filter: 'url(#watercolor-bleed)' }}></div>
-                {/* Warm orange/coral splotch */}
-                <div className="splotch splotch-orange" style={{ filter: 'url(#watercolor-bleed-2)' }}></div>
-                {/* Deep purple splotch */}
-                <div className="splotch splotch-purple" style={{ filter: 'url(#watercolor-bleed)' }}></div>
-                {/* Soft blue accent */}
-                <div className="splotch splotch-blue" style={{ filter: 'url(#watercolor-bleed-2)' }}></div>
-                {/* Golden highlight */}
-                <div className="splotch splotch-gold" style={{ filter: 'url(#watercolor-bleed)' }}></div>
+                <div className="splotch splotch-pink"></div>
+                <div className="splotch splotch-orange"></div>
+                <div className="splotch splotch-purple"></div>
+                <div className="splotch splotch-blue"></div>
+                <div className="splotch splotch-gold"></div>
             </div>
 
             {/* Content */}
@@ -42,7 +23,7 @@ const Hero: React.FC = () => {
                         initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:rounded-none"
+                        className="bg-white/70 rounded-2xl p-6 lg:bg-transparent lg:p-0 lg:rounded-none"
                     >
                         {/* Badge */}
                         <motion.div
