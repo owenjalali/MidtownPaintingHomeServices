@@ -8,16 +8,30 @@ const Hero: React.FC = () => {
         <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-midtown-light via-white to-blue-50">
             {/* Watercolor Paint Splash Background */}
             <svg width="0" height="0" style={{ position: 'absolute' }}>
-                <filter id="watercolor-bleed">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.01 0.03" numOctaves="3" result="noise" />
-                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="100" />
-                </filter>
+                <defs>
+                    <filter id="watercolor-bleed">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.01 0.03" numOctaves="4" seed="2" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="120" />
+                    </filter>
+                    <filter id="watercolor-bleed-2">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.015 0.025" numOctaves="3" seed="5" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="90" />
+                    </filter>
+                </defs>
             </svg>
 
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="splotch splotch-1" style={{ filter: 'url(#watercolor-bleed)' }}></div>
-                <div className="splotch splotch-2" style={{ filter: 'url(#watercolor-bleed)' }}></div>
-                <div className="splotch splotch-3" style={{ filter: 'url(#watercolor-bleed)' }}></div>
+            {/* Animated Watercolor Canvas */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none watercolor-canvas">
+                {/* Large vibrant pink/magenta splotch */}
+                <div className="splotch splotch-pink" style={{ filter: 'url(#watercolor-bleed)' }}></div>
+                {/* Warm orange/coral splotch */}
+                <div className="splotch splotch-orange" style={{ filter: 'url(#watercolor-bleed-2)' }}></div>
+                {/* Deep purple splotch */}
+                <div className="splotch splotch-purple" style={{ filter: 'url(#watercolor-bleed)' }}></div>
+                {/* Soft blue accent */}
+                <div className="splotch splotch-blue" style={{ filter: 'url(#watercolor-bleed-2)' }}></div>
+                {/* Golden highlight */}
+                <div className="splotch splotch-gold" style={{ filter: 'url(#watercolor-bleed)' }}></div>
             </div>
 
             {/* Content */}
@@ -127,6 +141,7 @@ const Hero: React.FC = () => {
                                 src="/images/logo.png"
                                 alt="Midtown Painting Home Services"
                                 className="w-48 sm:w-64 md:w-80 lg:w-96 drop-shadow-2xl"
+                                style={{ mixBlendMode: 'multiply' }}
                             />
                         </motion.div>
                     </motion.div>

@@ -62,7 +62,7 @@ const Portfolio: React.FC = () => {
                             className="relative group overflow-hidden rounded-xl cursor-pointer h-48 md:h-full md:flex-grow md:transition-all md:w-56 md:duration-500 md:hover:w-full"
                         >
                             <img
-                                className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                                className="h-full w-full object-cover object-center"
                                 src={img.src}
                                 alt={img.alt}
                                 loading="lazy"
