@@ -42,6 +42,7 @@ const Hero: React.FC = () => {
                         initial={{ opacity: 0, x: -50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8 }}
+                        className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:rounded-none"
                     >
                         {/* Badge */}
                         <motion.div
