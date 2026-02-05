@@ -108,7 +108,7 @@ const Hero: React.FC = () => {
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6 }}
-                            className="flex flex-wrap gap-6 mt-10 pt-10 border-t border-gray-200"
+                            className="flex flex-wrap gap-6 mt-10 pt-10"
                         >
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <Shield className="w-5 h-5 text-midtown-blue" />

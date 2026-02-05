@@ -2,11 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const portfolioImages = [
-    { src: '/images/gallery-1.png', alt: 'Deck Staining' },
-    { src: '/images/gallery-2.png', alt: 'Fence Restoration' },
-    { src: '/images/gallery-3.png', alt: 'Exterior Painting' },
-    { src: '/images/gallery-4.png', alt: 'Porch & Steps' },
-    { src: '/images/gallery-5.png', alt: 'Interior Painting' },
+    { src: '/images/gallery-1.png', alt: 'Deck & Railing' },
+    { src: '/images/gallery-2.png', alt: 'Interior Design' },
+    { src: '/images/gallery-3.png', alt: 'Garage Refresh' },
+    { src: '/images/gallery-4.png', alt: 'Porch Restoration' },
+    { src: '/images/gallery-5.png', alt: 'Front Porch Painting' },
     { src: '/images/gallery-6.png', alt: 'Home Exterior' },
 ];
 
