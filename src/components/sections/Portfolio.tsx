@@ -2,12 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const portfolioImages = [
-    { src: '/images/gallery-1.png', alt: 'Exterior Transformation' },
-    { src: '/images/gallery-2.png', alt: 'Garage Refresh' },
-    { src: '/images/gallery-3.png', alt: 'Fence Restoration' },
-    { src: '/images/gallery-4.png', alt: 'Deck Cleaning' },
-    { src: '/images/gallery-5.png', alt: 'Home Exterior' },
-    { src: '/images/gallery-6.png', alt: 'Porch Revival' },
+    { src: '/images/gallery-1.png', alt: 'Deck Staining' },
+    { src: '/images/gallery-2.png', alt: 'Fence Restoration' },
+    { src: '/images/gallery-3.png', alt: 'Exterior Painting' },
+    { src: '/images/gallery-4.png', alt: 'Porch & Steps' },
+    { src: '/images/gallery-5.png', alt: 'Interior Painting' },
+    { src: '/images/gallery-6.png', alt: 'Home Exterior' },
 ];
 
 const Portfolio: React.FC = () => {

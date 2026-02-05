@@ -141,7 +141,6 @@ const Hero: React.FC = () => {
                                 src="/images/logo.png"
                                 alt="Midtown Painting Home Services"
                                 className="w-48 sm:w-64 md:w-80 lg:w-96 drop-shadow-2xl"
-                                style={{ mixBlendMode: 'multiply' }}
                             />
                         </motion.div>
                     </motion.div>
