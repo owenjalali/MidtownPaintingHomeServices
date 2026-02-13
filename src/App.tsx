@@ -2,6 +2,8 @@ import ScrollProgress from './components/ui/ScrollProgress';
 import Navbar from './components/sections/Navbar';
 import Hero from './components/sections/Hero';
 import Services from './components/sections/Services';
+import WhyPaint from './components/sections/WhyPaint';
+import OurProcess from './components/sections/OurProcess';
 import BeforeAfter from './components/sections/BeforeAfter';
 import Portfolio from './components/sections/Portfolio';
 import About from './components/sections/About';
@@ -22,6 +24,8 @@ function App() {
             {/* Main Sections */}
             <Hero />
             <Services />
+            <WhyPaint />
+            <OurProcess />
             <BeforeAfter />
             <Portfolio />
             <About />

@@ -75,7 +75,7 @@ const Testimonials: React.FC = () => {
                     className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16"
                 >
                     <div className="text-center">
-                        <div className="text-3xl md:text-5xl font-heading font-bold text-midtown-orange">50+</div>
+                        <div className="text-3xl md:text-5xl font-heading font-bold text-midtown-orange">70+</div>
                         <div className="text-white/80 text-sm mt-2">Projects Completed</div>
                     </div>
                     <div className="text-center">
@@ -83,7 +83,7 @@ const Testimonials: React.FC = () => {
                         <div className="text-white/80 text-sm mt-2">Average Rating</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-3xl md:text-5xl font-heading font-bold text-midtown-orange">3+</div>
+                        <div className="text-3xl md:text-5xl font-heading font-bold text-midtown-orange">4+</div>
                         <div className="text-white/80 text-sm mt-2">Years in Business</div>
                     </div>
                 </motion.div>

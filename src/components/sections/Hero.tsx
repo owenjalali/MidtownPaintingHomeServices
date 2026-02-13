@@ -1,149 +1,107 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Shield, Clock, Star } from 'lucide-react';
-import WetPaintButton from '../ui/WetPaintButton';
+import { Phone, ArrowRight } from 'lucide-react';
 
 const Hero: React.FC = () => {
     return (
-        <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-midtown-light via-white to-blue-50">
-            {/* Animated Watercolor Canvas - CSS only, no SVG filters for performance */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none watercolor-canvas">
-                <div className="splotch splotch-pink"></div>
-                <div className="splotch splotch-orange"></div>
-                <div className="splotch splotch-purple"></div>
-                <div className="splotch splotch-blue"></div>
-                <div className="splotch splotch-gold"></div>
+        <section id="hero" className="relative min-h-screen flex items-end overflow-hidden">
+            {/* Full-bleed background image */}
+            <div className="absolute inset-0">
+                <img
+                    src="/images/d0a03533-499b-42c8-93c2-2c6aca1056f3.jpg"
+                    alt="Artistic city skyline painting with bold paint strokes"
+                    className="w-full h-full object-cover"
+                />
+                {/* Gradient overlays for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/95 via-[#0a1628]/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/70 via-transparent to-transparent" />
             </div>
 
-            {/* Content */}
-            <div className="relative z-10 container mx-auto px-6 py-20 lg:py-32 pt-32">
-                <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                    {/* Left Column - Text */}
+            {/* Content — bottom-left */}
+            <div className="container mx-auto px-6 md:px-10 relative z-10 pb-16 md:pb-20 pt-32">
+                <div className="max-w-2xl">
+                    {/* Badge */}
                     <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8 }}
-                        className="bg-white/70 rounded-2xl p-6 lg:bg-transparent lg:p-0 lg:rounded-none"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-midtown-orange/30 rounded-full px-5 py-2.5 mb-8"
                     >
-                        {/* Badge */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="inline-flex items-center gap-2 bg-midtown-orange/10 text-midtown-orange px-4 py-2 rounded-full text-sm font-semibold mb-6"
-                        >
-                            <span className="flex items-center">
-                                {[1, 2, 3, 4, 5].map((i) => (
-                                    <Star key={i} className="w-4 h-4 fill-current" />
-                                ))}
-                            </span>
-                            <span>5-Star Rated in the GTA</span>
-                        </motion.div>
-
-                        {/* Main Heading */}
-                        <motion.h1
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-midtown-navy leading-tight mb-6"
-                        >
-                            Transform Your Space with{' '}
-                            <span className="text-midtown-orange">GTA's Most Trusted</span> Painters
-                        </motion.h1>
-
-                        {/* Subheading */}
-                        <motion.p
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="text-lg md:text-xl text-gray-600 mb-8 max-w-xl"
-                        >
-                            50+ projects completed with 5-star reviews. Fully insured with $5M liability coverage.
-                            <span className="font-semibold text-midtown-navy"> Get 10% off when you book on quote day!</span>
-                        </motion.p>
-
-                        {/* CTA Buttons */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                            className="flex flex-wrap gap-4"
-                        >
-                            <WetPaintButton
-                                size="lg"
-                                onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-                            >
-                                Get Your Free Quote
-                            </WetPaintButton>
-
-                            <a
-                                href="tel:+16479669108"
-                                className="inline-flex items-center gap-2 px-6 py-4 border-2 border-midtown-navy text-midtown-navy rounded-full font-semibold hover:bg-midtown-navy hover:text-white transition-all duration-300"
-                            >
-                                <Phone className="w-5 h-5" />
-                                (647) 966-9108
-                            </a>
-                        </motion.div>
-
-                        {/* Trust Indicators */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6 }}
-                            className="flex flex-wrap gap-6 mt-10 pt-10"
-                        >
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Shield className="w-5 h-5 text-midtown-blue" />
-                                <span>$5M Liability Insurance</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Shield className="w-5 h-5 text-midtown-blue" />
-                                <span>WSIB Covered</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Clock className="w-5 h-5 text-midtown-blue" />
-                                <span>3 Years in Business</span>
-                            </div>
-                        </motion.div>
+                        <div className="w-2 h-2 bg-midtown-orange rounded-full animate-pulse" />
+                        <span className="text-sm font-medium text-white/90">Now Booking Summer 2026</span>
                     </motion.div>
 
-                    {/* Right Column - Logo */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.8, delay: 0.3 }}
-                        className="relative flex justify-center items-center"
+                    {/* Heading */}
+                    <motion.h1
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.7, delay: 0.1 }}
+                        className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold text-white leading-[1.05] mb-6"
                     >
-                        <motion.div
-                            animate={{ y: [0, -15, 0] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                            className="relative z-10"
+                        Toronto's Most
+                        <br />
+                        <span className="bg-gradient-to-r from-midtown-orange via-amber-400 to-yellow-300 bg-clip-text text-transparent">
+                            Trusted
+                        </span>{' '}
+                        Painters
+                    </motion.h1>
+
+                    {/* Subtitle */}
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="text-white/80 text-lg md:text-xl leading-relaxed mb-10 max-w-lg"
+                    >
+                        Professional interior &amp; exterior painting across the GTA.
+                        70+ projects completed with a perfect 5-star rating.
+                    </motion.p>
+
+                    {/* CTA Buttons */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                        className="flex flex-wrap gap-4 mb-12"
+                    >
+                        <a
+                            href="#contact"
+                            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-midtown-orange to-amber-500 text-white rounded-full font-semibold text-lg hover:scale-105 hover:shadow-xl hover:shadow-midtown-orange/25 transition-all duration-300"
                         >
-                            <img
-                                src="/images/logo.png"
-                                alt="Midtown Painting Home Services"
-                                className="w-48 sm:w-64 md:w-80 lg:w-96 drop-shadow-2xl"
-                            />
-                        </motion.div>
+                            Get Your Free Quote
+                            <ArrowRight className="w-5 h-5" />
+                        </a>
+                        <a
+                            href="tel:+16479669108"
+                            className="inline-flex items-center gap-3 px-8 py-4 bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-full font-semibold text-lg hover:bg-white/20 transition-all"
+                        >
+                            <Phone className="w-5 h-5" />
+                            (647) 966-9108
+                        </a>
+                    </motion.div>
+
+                    {/* Trust indicators */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.8, delay: 0.5 }}
+                        className="flex flex-wrap gap-8"
+                    >
+                        {[
+                            { label: '70+', sub: 'Projects' },
+                            { label: '5.0★', sub: 'Rating' },
+                            { label: '$5M', sub: 'Insured' },
+                            { label: '4 Yrs', sub: 'Experience' },
+                        ].map((stat) => (
+                            <div key={stat.label} className="text-center">
+                                <div className="text-2xl font-heading font-bold text-white">{stat.label}</div>
+                                <div className="text-sm text-white/60">{stat.sub}</div>
+                            </div>
+                        ))}
                     </motion.div>
                 </div>
             </div>
-
-            {/* Scroll indicator */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.2 }}
-                className="absolute bottom-8 left-1/2 -translate-x-1/2"
-            >
-                <motion.div
-                    animate={{ y: [0, 10, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="w-6 h-10 border-2 border-midtown-navy/30 rounded-full flex justify-center pt-2"
-                >
-                    <div className="w-1.5 h-3 bg-midtown-navy/30 rounded-full" />
-                </motion.div>
-            </motion.div>
         </section>
     );
 };

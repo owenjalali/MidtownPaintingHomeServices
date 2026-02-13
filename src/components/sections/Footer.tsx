@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
                     <div className="lg:col-span-2">
                         <img src="/images/logo.png" alt="Midtown Painting" className="h-20 mb-6" />
                         <p className="text-gray-400 leading-relaxed max-w-md">
-                            Transform your space with GTA's most trusted painters. 50+ projects completed with 5-star reviews.
+                            Transform your space with GTA's most trusted painters. 70+ projects completed with 5-star reviews.
                             Fully insured with $5M liability coverage.
                         </p>
                         <div className="flex gap-4 mt-6">
@@ -64,9 +64,9 @@ const Footer: React.FC = () => {
                                 </a>
                             </li>
                             <li>
-                                <a href="mailto:carterliamjenkins@icloud.com" className="flex items-center gap-3 text-gray-400 hover:text-midtown-orange transition-colors">
+                                <a href="mailto:carterjenkins91@gmail.com" className="flex items-center gap-3 text-gray-400 hover:text-midtown-orange transition-colors">
                                     <Mail className="w-5 h-5" />
-                                    carterliamjenkins@icloud.com
+                                    carterjenkins91@gmail.com
                                 </a>
                             </li>
                             <li className="flex items-center gap-3 text-gray-400">

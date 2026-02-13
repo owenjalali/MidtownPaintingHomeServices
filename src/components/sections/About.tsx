@@ -1,112 +1,116 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Star, Clock, Award } from 'lucide-react';
-import TextFrameBorder from '../ui/TextFrameBorder';
+
+const stats = [
+    { value: '70+', label: 'Projects' },
+    { value: '4 Yrs', label: 'Experience' },
+    { value: '$5M', label: 'Insured' },
+    { value: '5.0★', label: 'Rating' },
+];
 
 const About: React.FC = () => {
     return (
-        <section id="about" className="py-20 lg:py-32 bg-white overflow-hidden">
+        <section id="about" className="py-24 bg-midtown-light">
             <div className="container mx-auto px-6">
-                <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                    {/* Left Column - Image with Text Frame */}
+                {/* Section Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="text-center mb-16"
+                >
+                    <span className="text-midtown-orange font-semibold tracking-[0.2em] uppercase text-sm">
+                        About the Founder
+                    </span>
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-midtown-navy mt-4">
+                        Meet Carter Jenkins
+                    </h2>
+                </motion.div>
+
+                <div className="grid lg:grid-cols-2 gap-16 items-center max-w-5xl mx-auto">
+                    {/* Left: Photos */}
                     <motion.div
-                        initial={{ opacity: 0, x: -50 }}
+                        initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="relative flex justify-center"
+                        transition={{ duration: 0.6 }}
+                        className="space-y-6"
                     >
-                        {/* Text Frame Border around Carter's photo */}
-                        <TextFrameBorder
-                            imageSrc="/images/carter.png"
-                            text="✦ QUALITY ✦ TRUSTED ✦ PROFESSIONAL ✦ GTA'S BEST ✦ 50+ PROJECTS "
-                            size={350}
-                            className="relative z-10"
-                        />
+                        {/* Carter's headshot */}
+                        <div className="flex justify-center">
+                            <div className="w-64 h-64 md:w-72 md:h-72 rounded-2xl overflow-hidden shadow-xl">
+                                <img
+                                    src="/images/carter.png"
+                                    alt="Carter Jenkins - Founder of Midtown Painting"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        </div>
 
-                        {/* Decorative background element */}
-                        <div className="absolute -left-10 -bottom-10 w-64 h-64 bg-midtown-orange/10 rounded-full blur-3xl" />
-                        <div className="absolute -right-10 -top-10 w-48 h-48 bg-midtown-blue/10 rounded-full blur-3xl" />
+                        {/* Team photo */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 15 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.2 }}
+                            className="rounded-2xl overflow-hidden shadow-xl"
+                        >
+                            <img
+                                src="/images/team.png"
+                                alt="Student Works Management Program team"
+                                className="w-full h-64 object-cover object-[center_25%]"
+                            />
+                            <div className="bg-midtown-navy px-5 py-3">
+                                <p className="text-white/90 text-sm font-medium">
+                                    Student Works Management Program
+                                </p>
+                            </div>
+                        </motion.div>
                     </motion.div>
 
-                    {/* Right Column - Content */}
+                    {/* Right: Bio */}
                     <motion.div
-                        initial={{ opacity: 0, x: 50 }}
+                        initial={{ opacity: 0, x: 30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
+                        transition={{ duration: 0.6 }}
+                        className="space-y-6"
                     >
-                        <span className="text-midtown-orange font-semibold text-sm uppercase tracking-wider">
-                            About Us
-                        </span>
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-midtown-navy mt-4 mb-6">
-                            Meet Carter Jenkins
-                        </h2>
-                        <p className="text-gray-600 text-lg leading-relaxed mb-6">
-                            Hi, I'm Carter! A McGill University 2nd-year student with a passion for transforming spaces.
-                            What started as summer painting jobs has grown into <strong>Midtown Painting Home Services</strong> –
-                            a company built on quality, reliability, and attention to detail.
-                        </p>
-                        <p className="text-gray-600 text-lg leading-relaxed mb-8">
-                            Over the past <strong>3 years</strong>, I've personally overseen <strong>50+ projects</strong> across
-                            the Greater Toronto Area, earning <strong>5-star reviews</strong> from every client. My team and I
-                            treat every home like it's our own.
-                        </p>
+                        <div className="space-y-5">
+                            <p className="text-gray-700 text-lg leading-relaxed">
+                                I'm Carter Jenkins, a second-year economics student at
+                                <strong> McGill University</strong> and founder of Midtown Painting. This is my
+                                <strong> fourth year</strong> in the painting industry and my
+                                <strong> third year</strong> running my own business.
+                            </p>
+                            <p className="text-gray-700 text-lg leading-relaxed">
+                                Last summer, my team completed <strong>70+ projects</strong> across
+                                the Greater Toronto Area, earning a <strong>5-star rating</strong> from
+                                every client. This summer, our goal is <strong>130+ projects</strong>.
+                            </p>
+                            <p className="text-gray-700 text-lg leading-relaxed">
+                                We use only the highest-quality Sherwin-Williams materials, and my team
+                                includes many returning skilled painters. We're backed by experienced coaches
+                                from <strong>The Student Works Management Program</strong>.
+                            </p>
+                        </div>
 
-                        {/* Trust Badges */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="flex items-center gap-3 p-4 bg-midtown-light rounded-xl"
-                            >
-                                <div className="w-12 h-12 bg-midtown-navy rounded-lg flex items-center justify-center">
-                                    <Shield className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                    <div className="font-heading font-bold text-midtown-navy">$5M Insured</div>
-                                    <div className="text-sm text-gray-500">Liability Coverage</div>
-                                </div>
-                            </motion.div>
-
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="flex items-center gap-3 p-4 bg-midtown-light rounded-xl"
-                            >
-                                <div className="w-12 h-12 bg-midtown-orange rounded-lg flex items-center justify-center">
-                                    <Award className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                    <div className="font-heading font-bold text-midtown-navy">WSIB</div>
-                                    <div className="text-sm text-gray-500">Warranty Covered</div>
-                                </div>
-                            </motion.div>
-
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="flex items-center gap-3 p-4 bg-midtown-light rounded-xl"
-                            >
-                                <div className="w-12 h-12 bg-midtown-blue rounded-lg flex items-center justify-center">
-                                    <Star className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                    <div className="font-heading font-bold text-midtown-navy">50+</div>
-                                    <div className="text-sm text-gray-500">Projects Completed</div>
-                                </div>
-                            </motion.div>
-
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className="flex items-center gap-3 p-4 bg-midtown-light rounded-xl"
-                            >
-                                <div className="w-12 h-12 bg-midtown-navy rounded-lg flex items-center justify-center">
-                                    <Clock className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                    <div className="font-heading font-bold text-midtown-navy">3 Years</div>
-                                    <div className="text-sm text-gray-500">In Business</div>
-                                </div>
-                            </motion.div>
+                        {/* Stats */}
+                        <div className="grid grid-cols-4 gap-4 pt-6 border-t border-gray-200">
+                            {stats.map((stat, index) => (
+                                <motion.div
+                                    key={stat.label}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className="text-center"
+                                >
+                                    <div className="text-xl font-heading font-bold text-midtown-navy">{stat.value}</div>
+                                    <div className="text-xs text-gray-500">{stat.label}</div>
+                                </motion.div>
+                            ))}
                         </div>
                     </motion.div>
                 </div>

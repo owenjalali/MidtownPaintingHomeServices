@@ -1,33 +1,31 @@
 @import "tailwindcss";
-/* 
- ---break---
- */
+
 @custom-variant dark (&:is(.dark *));
 
 /* 
  * Tailwind V4 Theme Configuration 
- * Custom colors and design tokens for Midtown Painting
+ * Refined colors and premium design tokens for Midtown Painting
  */
 @theme {
-    /* Brand Colors */
-    --color-midtown-navy: #1a365d;
-    --color-midtown-blue: #6b9dcd;
-    --color-midtown-orange: #e8a63a;
-    --color-midtown-light: #f8fafc;
-    --color-midtown-dark: #0f172a;
+    /* Brand Colors — refined for elegance */
+    --color-midtown-navy: #0f2847;
+    --color-midtown-blue: #7ba7d4;
+    --color-midtown-orange: #d4943a;
+    --color-midtown-light: #fafaf8;
+    --color-midtown-dark: #0c1a2e;
 
     /* Font Families */
-    --font-family-heading: 'Outfit', sans-serif;
+    --font-family-heading: 'Playfair Display', serif;
     --font-family-body: 'Inter', sans-serif;
 }
 
 /* CSS Variables for JavaScript access */
 :root {
-    --midtown-navy: #1a365d;
-    --midtown-blue: #6b9dcd;
-    --midtown-orange: #e8a63a;
-    --midtown-light: #f8fafc;
-    --midtown-dark: #0f172a;
+    --midtown-navy: #0f2847;
+    --midtown-blue: #7ba7d4;
+    --midtown-orange: #d4943a;
+    --midtown-light: #fafaf8;
+    --midtown-dark: #0c1a2e;
     --background: hsl(48 33.33% 97.06%);
     --foreground: hsl(48 19.61% 20%);
     --card: hsl(48 33.33% 97.06%);
@@ -94,14 +92,14 @@ h3,
 h4,
 h5,
 h6 {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Playfair Display', serif;
     font-weight: 700;
     line-height: 1.2;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -110,7 +108,7 @@ h6 {
 
 ::-webkit-scrollbar-thumb {
     background: var(--midtown-navy);
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -156,10 +154,7 @@ h6 {
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   KEYFRAME ANIMATIONS
-   ═══════════════════════════════════════════════════════════ */
-
+/* Subtle Animations */
 @keyframes float {
 
     0%,
@@ -194,186 +189,7 @@ h6 {
     }
 }
 
-@keyframes bloom {
-
-    0%,
-    100% {
-        transform: scale(0.9) rotate(0deg);
-        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-    }
-
-    33% {
-        transform: scale(1.05) rotate(60deg);
-        border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
-    }
-
-    66% {
-        transform: scale(1.1) rotate(120deg);
-        border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%;
-    }
-}
-
-@keyframes watercolor-flow {
-
-    0%,
-    100% {
-        transform: translate(0, 0) scale(1) rotate(0deg);
-        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-    }
-
-    25% {
-        transform: translate(3%, 2%) scale(1.05) rotate(3deg);
-        border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
-    }
-
-    50% {
-        transform: translate(-2%, 4%) scale(0.95) rotate(-2deg);
-        border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%;
-    }
-
-    75% {
-        transform: translate(1%, -2%) scale(1.02) rotate(1deg);
-        border-radius: 45% 55% 60% 40% / 50% 60% 40% 50%;
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   WATERCOLOR / PAINT SPLASH BACKGROUND STYLES
-   ═══════════════════════════════════════════════════════════ */
-
-.watercolor-bg {
-    position: relative;
-    overflow: hidden;
-}
-
-.watercolor-bg::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(107, 157, 205, 0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 60% 80% at 80% 20%, rgba(26, 54, 93, 0.3) 0%, transparent 50%),
-        radial-gradient(ellipse 70% 50% at 50% 80%, rgba(232, 166, 58, 0.35) 0%, transparent 40%);
-    animation: watercolor-drift 20s ease-in-out infinite;
-    pointer-events: none;
-}
-
-@keyframes watercolor-drift {
-
-    0%,
-    100% {
-        transform: translate(0, 0) rotate(0deg) scale(1);
-    }
-
-    25% {
-        transform: translate(3%, 2%) rotate(1deg) scale(1.02);
-    }
-
-    50% {
-        transform: translate(-2%, 4%) rotate(-0.5deg) scale(0.98);
-    }
-
-    75% {
-        transform: translate(1%, -2%) rotate(0.5deg) scale(1.01);
-    }
-}
-
-/* Watercolor canvas wrapper */
-.watercolor-canvas {
-    opacity: 0.85;
-}
-
-/* Individual splotches for more control */
-.splotch {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-}
-
-/* Vibrant watercolor splotches - pink, orange, purple, blue, gold */
-.splotch-pink {
-    width: 900px;
-    height: 900px;
-    background: radial-gradient(ellipse at center, rgba(236, 72, 153, 0.65) 0%, rgba(219, 39, 119, 0.35) 40%, transparent 70%);
-    top: -250px;
-    right: -200px;
-    animation: watercolor-flow 18s ease-in-out infinite;
-}
-
-.splotch-orange {
-    width: 800px;
-    height: 750px;
-    background: radial-gradient(ellipse at center, rgba(251, 146, 60, 0.6) 0%, rgba(249, 115, 22, 0.3) 45%, transparent 70%);
-    top: 5%;
-    right: 10%;
-    animation: watercolor-flow 22s ease-in-out infinite;
-    animation-delay: -4s;
-}
-
-.splotch-purple {
-    width: 850px;
-    height: 800px;
-    background: radial-gradient(ellipse at center, rgba(147, 51, 234, 0.55) 0%, rgba(126, 34, 206, 0.25) 45%, transparent 70%);
-    bottom: -200px;
-    left: -200px;
-    animation: watercolor-flow 20s ease-in-out infinite;
-    animation-delay: -8s;
-}
-
-.splotch-blue {
-    width: 700px;
-    height: 700px;
-    background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.45) 0%, rgba(37, 99, 235, 0.2) 45%, transparent 70%);
-    top: 45%;
-    left: 15%;
-    animation: watercolor-flow 25s ease-in-out infinite;
-    animation-delay: -12s;
-}
-
-.splotch-gold {
-    width: 650px;
-    height: 650px;
-    background: radial-gradient(ellipse at center, rgba(234, 179, 8, 0.5) 0%, rgba(202, 138, 4, 0.25) 40%, transparent 65%);
-    top: 15%;
-    left: 35%;
-    animation: watercolor-flow 16s ease-in-out infinite;
-    animation-delay: -6s;
-}
-
-/* Legacy splotch classes (portfolio, etc.) */
-.splotch-1 {
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(ellipse at center, rgba(236, 72, 153, 0.35) 0%, rgba(147, 51, 234, 0.15) 50%, transparent 70%);
-    top: -150px;
-    right: -100px;
-    animation: bloom 14s ease-in-out infinite;
-}
-
-.splotch-2 {
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(ellipse at center, rgba(251, 146, 60, 0.35) 0%, rgba(234, 179, 8, 0.15) 50%, transparent 70%);
-    bottom: -200px;
-    left: -100px;
-    animation: bloom 18s ease-in-out infinite;
-    animation-delay: 3s;
-}
-
-.splotch-3 {
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(ellipse at center, rgba(147, 51, 234, 0.3) 0%, rgba(59, 130, 246, 0.12) 50%, transparent 60%);
-    top: 40%;
-    left: 30%;
-    animation: bloom 16s ease-in-out infinite;
-    animation-delay: 6s;
-}
-
-/* 
- ---break---
- */
-
+/* Dark Mode */
 .dark {
     --background: hsl(60 2.70% 14.51%);
     --foreground: hsl(46.15 9.77% 73.92%);
@@ -421,10 +237,6 @@ h6 {
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 }
 
-/* 
- ---break---
- */
-
 @theme inline {
     --color-background: var(----background);
     --color-foreground: var(----foreground);
@@ -471,4 +283,3 @@ h6 {
     --shadow-xl: var(----shadow-xl);
     --shadow-2xl: var(----shadow-2xl);
 }
-

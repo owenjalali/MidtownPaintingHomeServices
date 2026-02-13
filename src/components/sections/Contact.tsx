@@ -186,7 +186,7 @@ const Contact: React.FC = () => {
                             </a>
 
                             <a
-                                href="mailto:carterliamjenkins@icloud.com"
+                                href="mailto:carterjenkins91@gmail.com"
                                 className="flex items-center gap-4 p-5 bg-midtown-light rounded-xl hover:bg-midtown-navy hover:text-white group transition-all"
                             >
                                 <div className="w-12 h-12 bg-midtown-navy group-hover:bg-midtown-orange rounded-lg flex items-center justify-center transition-colors">
@@ -194,7 +194,7 @@ const Contact: React.FC = () => {
                                 </div>
                                 <div>
                                     <div className="font-heading font-bold group-hover:text-white">Email Us</div>
-                                    <div className="text-gray-600 group-hover:text-midtown-blue">carterliamjenkins@icloud.com</div>
+                                    <div className="text-gray-600 group-hover:text-midtown-blue">carterjenkins91@gmail.com</div>
                                 </div>
                             </a>
 
