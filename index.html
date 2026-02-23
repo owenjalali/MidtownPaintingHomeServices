@@ -9,26 +9,34 @@
   <!-- SEO Meta Tags -->
   <title>Midtown Painting Home Services | GTA's Trusted Painters</title>
   <meta name="description"
-    content="Transform your space with GTA's most trusted painters. 70+ projects completed, 5-star reviews, fully insured with $5M liability coverage. Get 10% off when you book on quote day!" />
+    content="Premium residential painting with zero hassle. Transform your space with GTA's most trusted painters. Fully insured with $5M liability coverage." />
   <meta name="keywords"
     content="painting, Toronto painters, GTA painting, interior painting, exterior painting, deck staining, commercial painting" />
 
   <!-- Open Graph -->
   <meta property="og:title" content="Midtown Painting Home Services" />
   <meta property="og:description"
-    content="Transform your space with GTA's most trusted painters. 70+ projects, 5-star reviews." />
+    content="Premium residential painting with zero hassle. Transform your space with GTA's most trusted painters." />
   <meta property="og:image" content="/images/logo.png" />
   <meta property="og:type" content="website" />
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts for Preset C: Brutalist Signal -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
 </head>
 
 <body>
+  <!-- Fixed Noise Overlay for Visual Texture -->
+  <div style="pointer-events: none; position: fixed; inset: 0; z-index: 9999; opacity: 0.05;">
+    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <filter id="noiseFilter">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#noiseFilter)" />
+    </svg>
+  </div>
+  
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

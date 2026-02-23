@@ -1,39 +1,23 @@
-import ScrollProgress from './components/ui/ScrollProgress';
-import Navbar from './components/sections/Navbar';
-import Hero from './components/sections/Hero';
-import Services from './components/sections/Services';
-import WhyPaint from './components/sections/WhyPaint';
-import OurProcess from './components/sections/OurProcess';
-import BeforeAfter from './components/sections/BeforeAfter';
-import Portfolio from './components/sections/Portfolio';
-import About from './components/sections/About';
-import Testimonials from './components/sections/Testimonials';
-import FAQ from './components/sections/FAQ';
-import Contact from './components/sections/Contact';
-import Footer from './components/sections/Footer';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import QuoteModal from './components/QuoteModal';
+import Home from './pages/Home';
+import Partnerships from './pages/Partnerships';
+import ManageBooking from './pages/ManageBooking';
 
 function App() {
     return (
-        <div className="min-h-screen bg-midtown-light">
-            {/* Navigation */}
-            <Navbar />
-
-            {/* Scroll Progress Indicator */}
-            <ScrollProgress />
-
-            {/* Main Sections */}
-            <Hero />
-            <Services />
-            <WhyPaint />
-            <OurProcess />
-            <BeforeAfter />
-            <Portfolio />
-            <About />
-            <Testimonials />
-            <FAQ />
-            <Contact />
-            <Footer />
-        </div>
+        <BrowserRouter>
+            <main className="bg-background min-h-screen text-foreground selection:bg-primary selection:text-white">
+                <Navbar />
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/partnerships" element={<Partnerships />} />
+                    <Route path="/manage-booking" element={<ManageBooking />} />
+                </Routes>
+                <QuoteModal />
+            </main>
+        </BrowserRouter>
     );
 }
 
