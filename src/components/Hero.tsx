@@ -39,9 +39,13 @@ const Hero = () => {
             className="relative w-full h-[100dvh] flex flex-col justify-end overflow-hidden pb-16 md:pb-24"
         >
             {/* Background Image Setup */}
-            <div
-                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: "url('/images/hero-new.jpg')" }}
+            <img
+                src="/images/hero-new.jpg"
+                alt="Beautifully finished Midtown Painting project"
+                className="absolute inset-0 z-0 h-full w-full object-cover"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
             />
             {/* Heavy Dark Gradient Overlay */}
             <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/60 to-black/40" />
@@ -78,9 +82,9 @@ const Hero = () => {
                     </button>
 
                     {/* Early Bird Discount Tag */}
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-sm shadow-md mt-2">
-                        <span className="text-sm font-data text-white/90 font-medium tracking-wide">
-                            Book on the day of quote &bull; <strong className="text-accent font-bold">10% OFF</strong>
+                    <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 border border-white/20 rounded-full backdrop-blur-sm shadow-md mt-2 md:mt-4">
+                        <span className="text-[15px] font-body text-white font-medium tracking-wide">
+                            Currently offering <strong className="text-[#5cb2ee] font-bold tracking-wider">10% OFF</strong> early bird discount!
                         </span>
                     </div>
                 </div>

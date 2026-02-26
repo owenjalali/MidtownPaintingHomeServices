@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import LazyImage from './ui/LazyImage';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,9 +62,12 @@ const Philosophy = () => {
             className="relative w-full py-32 md:py-48 bg-foreground text-[#E8E4DD] overflow-hidden"
         >
             {/* Background Texture Overlay */}
-            <div
-                className="absolute inset-0 z-0 opacity-[0.03] bg-cover bg-center mix-blend-overlay"
-                style={{ backgroundImage: "url('/images/rotting-wood.jpg')", filter: "grayscale(100%)" }}
+            <LazyImage
+                src="/images/rotting-wood.jpg"
+                alt="Subtle wood grain texture"
+                containerClassName="absolute inset-0 z-0"
+                className="h-full w-full object-cover opacity-[0.03] mix-blend-overlay grayscale"
+                sizes="100vw"
             />
 
             <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10" ref={triggerRef}>

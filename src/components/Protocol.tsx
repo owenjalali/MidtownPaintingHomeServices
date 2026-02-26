@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import LazyImage from './ui/LazyImage';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -86,9 +87,12 @@ const Protocol = () => {
                     className={`protocol-card sticky top-0 h-[100dvh] w-full flex flex-col justify-center items-center px-6 ${p.color} ${p.textMode} rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] origin-top z-[${10 + i}] border-b border-black/10 overflow-hidden relative`}
                 >
                     {/* Background Image heavily dimmed to strictly serve as texture */}
-                    <div
-                        className="absolute inset-0 bg-cover bg-center z-0 transition-transform duration-[10s] ease-out scale-105 opacity-20"
-                        style={{ backgroundImage: `url(${p.image})` }}
+                    <LazyImage
+                        src={p.image}
+                        alt={`${p.title} background texture`}
+                        containerClassName="absolute inset-0 z-0"
+                        className="h-full w-full object-cover transition-transform duration-[10s] ease-out scale-105 opacity-20"
+                        sizes="100vw"
                     />
 
                     <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col justify-center items-center text-center">

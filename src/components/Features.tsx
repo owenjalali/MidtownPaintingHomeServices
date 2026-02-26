@@ -1,15 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import LazyImage from './ui/LazyImage';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const FeatureImage = ({ imagePath }: { imagePath: string }) => {
+const FeatureImage = ({ imagePath, alt }: { imagePath: string; alt: string }) => {
     return (
         <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-gray-200">
-            <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105"
-                style={{ backgroundImage: `url('${imagePath}')` }}
+            <LazyImage
+                src={imagePath}
+                alt={alt}
+                containerClassName="absolute inset-0"
+                className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105"
+                sizes="(min-width: 768px) 30vw, 90vw"
             />
             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500" />
         </div>
@@ -52,18 +56,18 @@ const Features = () => {
 
                     {/* Card 1 */}
                     <div className="feature-card group flex flex-col gap-6 p-8 rounded-[2rem] bg-white border border-border shadow-xs hover:shadow-md hover:border-accent/30 transition-shadow">
-                        <FeatureImage imagePath="/images/feature-unmatched.png" />
+                        <FeatureImage imagePath="/images/feature-unmatched.png" alt="Painter rolling interior wall paint" />
                         <div>
                             <h3 className="text-2xl font-bold font-heading mb-2">Unmatched Experience</h3>
                             <p className="font-body text-gray-600 text-sm leading-relaxed">
-                                Carter has taken on 70+ projects, elevating homes across Leaside, Bennington, Rosedale, Moore Park, Lawrence, and many other premium neighbourhoods across the GTA.
+                                Carter has taken on 70+ projects, elevating homes across Leaside, Bennington, Rosedale, Moore Park, Lawrence Park, and many other lovely neighbourhoods in the GTA.
                             </p>
                         </div>
                     </div>
 
                     {/* Card 2 */}
                     <div className="feature-card group flex flex-col gap-6 p-8 rounded-[2rem] bg-white border border-border shadow-xs hover:shadow-md hover:border-accent/30 transition-shadow">
-                        <FeatureImage imagePath="/images/team.png" />
+                        <FeatureImage imagePath="/images/team.png" alt="Midtown Painting team posing together" />
                         <div>
                             <h3 className="text-2xl font-bold font-heading mb-2">Building a Legacy</h3>
                             <p className="font-body text-gray-600 text-sm leading-relaxed">
@@ -74,7 +78,7 @@ const Features = () => {
 
                     {/* Card 3 */}
                     <div className="feature-card group flex flex-col gap-6 p-8 rounded-[2rem] bg-white border border-border shadow-xs hover:shadow-md hover:border-accent/30 transition-shadow">
-                        <FeatureImage imagePath="/images/feature-flawless.png" />
+                        <FeatureImage imagePath="/images/feature-flawless.png" alt="Close-up of flawless painted trim" />
                         <div>
                             <h3 className="text-2xl font-bold font-heading mb-2">Flawless Finishes</h3>
                             <p className="font-body text-gray-600 text-sm leading-relaxed">

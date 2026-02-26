@@ -7,7 +7,7 @@
 @theme {
     /* Brand Colors */
     --color-paper: #FAFAFA;
-    --color-orange: #EA580C;
+    --color-orange: #f39c2b;
     --color-off-white: #FFFFFF;
     --color-black: #020617;
     --color-blue: #1E3A8A;
@@ -36,7 +36,7 @@
     --card-foreground: #020617;
     --border: rgba(2, 6, 23, 0.1);
 
-    --primary: #EA580C;
+    --primary: #f39c2b;
     /* Luxury vibrant orange */
     --primary-foreground: #FFFFFF;
 

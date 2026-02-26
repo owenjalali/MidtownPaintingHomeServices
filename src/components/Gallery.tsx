@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import LazyImage from './ui/LazyImage';
 
 type Tab = 'interior' | 'exterior' | 'wood';
 
@@ -133,9 +134,12 @@ const Gallery = () => {
                             className={`relative rounded-3xl overflow-hidden group cursor-pointer bg-gray-200 animate-fade-in ${getSpanForIndex(i)}`}
                             style={{ animationDelay: `${(i % 8) * 50}ms` }}
                         >
-                            <div
-                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105"
-                                style={{ backgroundImage: `url('${img.src}')` }}
+                            <LazyImage
+                                src={img.src}
+                                alt={img.alt}
+                                containerClassName="absolute inset-0"
+                                className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105"
+                                sizes="(min-width: 768px) 25vw, 50vw"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-500 flex items-center justify-center">
                                 <Maximize2 className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-8 h-8" />
@@ -174,6 +178,8 @@ const Gallery = () => {
                             src={activeImages[currentImageIndex].src}
                             alt={activeImages[currentImageIndex].alt}
                             className="max-w-full max-h-full object-contain drop-shadow-2xl select-none"
+                            loading="eager"
+                            decoding="async"
                             onClick={(e) => e.stopPropagation()} // Prevent click through to background
                         />
                     </div>

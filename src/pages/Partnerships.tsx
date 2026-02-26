@@ -27,7 +27,7 @@ const Partnerships = () => {
                         {/* WSIB */}
                         <div className="bg-card border border-black/10 rounded-[2rem] p-8 flex flex-col gap-6 hover:shadow-lg transition-shadow duration-300">
                             <div className="h-24 flex items-center justify-start">
-                                <img src="/images/certifications/wsib.png" alt="WSIB Ontario Certified" className="h-full object-contain max-w-[200px]" />
+                                <img src="/images/certifications/wsib.png" alt="WSIB Ontario Certified" className="h-full object-contain max-w-[200px]" loading="lazy" decoding="async" />
                             </div>
                             <div>
                                 <h3 className="text-2xl font-bold font-heading mb-3">WSIB Certified</h3>
@@ -40,7 +40,7 @@ const Partnerships = () => {
                         {/* MS Society */}
                         <div className="bg-card border border-black/10 rounded-[2rem] p-8 flex flex-col gap-6 hover:shadow-lg transition-shadow duration-300">
                             <div className="h-24 flex items-center justify-start">
-                                <img src="/images/certifications/ms-society.png" alt="MS Society of Canada" className="h-full object-contain max-w-[200px]" />
+                                <img src="/images/certifications/ms-society.png" alt="MS Society of Canada" className="h-full object-contain max-w-[200px]" loading="lazy" decoding="async" />
                             </div>
                             <div>
                                 <h3 className="text-2xl font-bold font-heading mb-3">MS Society of Canada</h3>
@@ -53,7 +53,7 @@ const Partnerships = () => {
                         {/* Sherwin Williams */}
                         <div className="bg-card border border-black/10 rounded-[2rem] p-8 flex flex-col gap-6 hover:shadow-lg transition-shadow duration-300">
                             <div className="h-24 flex items-center justify-start">
-                                <img src="/images/certifications/sherwin-williams.png" alt="Sherwin Williams" className="h-full object-contain max-w-[200px]" />
+                                <img src="/images/certifications/sherwin-williams.png" alt="Sherwin Williams" className="h-full object-contain max-w-[200px]" loading="lazy" decoding="async" />
                             </div>
                             <div>
                                 <h3 className="text-2xl font-bold font-heading mb-3">Sherwin-Williams</h3>
@@ -66,12 +66,25 @@ const Partnerships = () => {
                         {/* Dulux */}
                         <div className="bg-card border border-black/10 rounded-[2rem] p-8 flex flex-col gap-6 hover:shadow-lg transition-shadow duration-300">
                             <div className="h-24 flex items-center justify-start">
-                                <img src="/images/certifications/dulux.png" alt="Dulux Paints" className="h-full object-contain max-w-[200px]" />
+                                <img src="/images/certifications/dulux.png" alt="Dulux Paints" className="h-full object-contain max-w-[200px]" loading="lazy" decoding="async" />
                             </div>
                             <div>
                                 <h3 className="text-2xl font-bold font-heading mb-3">Dulux Paints</h3>
                                 <p className="font-body text-gray-600 text-sm leading-relaxed">
                                     Partnering with Dulux Canada enables us to access industry-leading color pallets and highly resilient finishes. By combining expert techniques with high-end Dulux coatings, we ensure lasting value for all exterior and interior jobs.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Benson Kearley */}
+                        <div className="bg-card border border-black/10 rounded-[2rem] p-8 flex flex-col gap-6 hover:shadow-lg transition-shadow duration-300 md:col-span-1 lg:col-span-2 max-w-2xl mx-auto w-full">
+                            <div className="h-24 flex items-center justify-start">
+                                <img src="/images/certifications/benson-kearley.png" alt="Benson Kearley IFG" className="h-full object-contain max-w-[200px]" loading="lazy" decoding="async" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold font-heading mb-3">Benson Kearley IFG</h3>
+                                <p className="font-body text-gray-600 text-sm leading-relaxed">
+                                    We are proud to partner with Benson Kearley IFG, ensuring our business operations and comprehensive coverage are handled by industry leaders, giving our clients total peace of mind and protection on every job.
                                 </p>
                             </div>
                         </div>

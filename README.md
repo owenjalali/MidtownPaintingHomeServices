@@ -5,10 +5,13 @@
 1. Install dependencies:
    `npm install`
 2. Create `.env` from `.env.example` and fill in your SMTP + recipient values.
-3. Run frontend + backend together:
-   `npm run dev:full`
+3. Run frontend + backend + Trigger worker (required for quote/booking flows):
+   `npm run dev:full:trigger`
 4. Open the site at:
    `http://localhost:5173`
+
+If you only need frontend + API without Trigger task execution, use:
+`npm run dev:full`
 
 ## Trigger.dev Setup (Step-by-step)
 
@@ -39,7 +42,8 @@ Included Trigger files:
 - After form submit, frontend loads live availability from `GET /api/calendar/availability?month=YYYY-MM`.
 - Availability is generated in 15-minute increments and filtered against Carter's real Google Calendar conflicts.
 - Booking is finalized through `POST /api/calendar/booking`.
-- Booking endpoint creates the calendar event, invites the client, and sends confirmation emails to both Carter and the client.
+- Booking endpoint creates the calendar event, adds the client as an attendee, and sends confirmation emails to both Carter and the client.
+- Client calendar invite emails are controlled by `BOOKING_GOOGLE_SEND_UPDATES` (`all`, `externalOnly`, or `none`).
 - Booking confirmation emails include secure actor-specific manage links (`/manage-booking`) for client and Carter.
 - Manage operations are available through:
   - `GET /api/calendar/manage/context`
@@ -56,6 +60,7 @@ Included Trigger files:
 - `PORT` API server port (default: `8787`)
 - `CORS_ORIGIN` allowed frontend origin
 - `MAX_UPLOAD_FILES` max image attachments per submit (default: `8`)
+- `CALENDAR_AVAILABILITY_CACHE_TTL_MS` in-memory availability cache TTL in milliseconds (`0` disables cache, default: `120000`)
 - `SMTP_HOST`
 - `SMTP_PORT`
 - `SMTP_SECURE` (`true` for SSL, typically with port `465`)
@@ -74,6 +79,7 @@ Included Trigger files:
 - `BOOKING_SLOT_INTERVAL_MINUTES` slot spacing in minutes (default: `15`)
 - `BOOKING_SELF_SERVICE_CUTOFF_MINUTES` client self-service lock window before the call (default: `720`)
 - `BOOKING_MANAGE_BASE_URL` public site base URL used in manage links (default fallback: `CORS_ORIGIN` or `http://localhost:5173`)
+- `BOOKING_GOOGLE_SEND_UPDATES` Google Calendar attendee notification mode (`all`, `externalOnly`, or `none`; default: `none`)
 - `BOOKING_SEND_REMINDER_EMAIL` global default email reminder toggle (`true`/`false`)
 - `BOOKING_SEND_REMINDER_SMS` global default SMS reminder toggle (`true`/`false`)
 - `BOOKING_REMINDER_1_MINUTES_BEFORE` first reminder offset (default: `60`)
@@ -82,7 +88,11 @@ Included Trigger files:
 - `BOOKING_REMINDER_2_MINUTES_BEFORE` second reminder offset (default: `15`)
 - `BOOKING_REMINDER_2_SEND_EMAIL` second reminder email toggle (default: `false`)
 - `BOOKING_REMINDER_2_SEND_SMS` second reminder SMS toggle (default: `true`)
+- `BOOKING_REMINDER_3_MINUTES_BEFORE` third reminder offset (default: `5`)
+- `BOOKING_REMINDER_3_SEND_EMAIL` third reminder email toggle (default: `false`)
+- `BOOKING_REMINDER_3_SEND_SMS` third reminder SMS toggle (default: `false`)
 - `BOOKING_REMINDER_RUN_TTL` queue TTL for delayed reminder runs (default: `24h`)
+- `BOOKING_AVAILABILITY_QUEUE_CONCURRENCY` Trigger queue concurrency for interactive availability searches (default: `20`)
 - `GOOGLE_CLIENT_ID` Google OAuth client id
 - `GOOGLE_CLIENT_SECRET` Google OAuth client secret
 - `GOOGLE_REFRESH_TOKEN` offline refresh token for the Google account with Carter's calendar access

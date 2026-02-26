@@ -1,0 +1,9 @@
+# Trigger worker sources are deployed separately via Trigger Cloud
+src/trigger
+trigger.config.ts
+.trigger
+
+# Local secrets
+.env
+.env.*
+*.local

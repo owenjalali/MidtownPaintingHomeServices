@@ -9,19 +9,19 @@ gsap.registerPlugin(ScrollTrigger);
 const faqs = [
     {
         question: "How does the estimate process work?",
-        answer: "Carter will basically give you a call. We'll discuss the scope of the project and the logistics of the work."
+        answer: "Carter and you will have a consultation call at a time that works best for you both. The point of this phone call is for you to give us a clear picture of your project, and then arrange a time for Carter to come by if we are the right fit for your project!"
     },
     {
         question: "What happens during the estimate?",
-        answer: "We'll find a time where we can meet with both of the homeowners. Both of the homeowners must be present. The whole quote process should just take about 15 to 30 minutes. We walk around, explain what we're doing, take measurements, and then write up and present the quote to you."
+        answer: "Once we arrange a time that works for both homeowners, Carter will come by and look at all the areas of work with you. He will explain the process the crews will follow to effectively complete the project. Once everything is clear, he will take his measurements, then take about 20 minutes to write up the estimate. Finally, we present the quote to you and come to an agreement!"
     },
     {
         question: "What kind of paint do you use?",
         answer: "We strictly use premium deluxe paints, including Sherwin-Williams and other top-tier options to guarantee a flawless finish."
     },
     {
-        question: "What's the deal with that 10% off?",
-        answer: "The 10% off is an exclusive discount reserved for homeowners who book with us exactly on the same day of the estimate."
+        question: "What's the deal with the 10% off?",
+        answer: "The ten percent discount is offered if you choose to move forward on the day of the estimate. It's an incentive we offer because of how busy we are throughout this time of year!"
     },
     {
         question: "Are you guys insured and have warranty?",

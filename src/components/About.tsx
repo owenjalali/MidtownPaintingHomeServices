@@ -35,6 +35,9 @@ const About = () => {
                             src="/images/carter.png"
                             alt="Carter Jenkins - Owner of Midtown Painting"
                             className="absolute inset-0 w-full h-full object-cover grayscale contrast-[1.1]"
+                            loading="lazy"
+                            decoding="async"
+                            sizes="(min-width: 768px) 38vw, 92vw"
                         />
                         {/* Premium Brutalist Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent mix-blend-multiply" />

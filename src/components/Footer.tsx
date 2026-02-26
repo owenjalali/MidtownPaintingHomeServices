@@ -29,7 +29,7 @@ const Footer = () => {
                 {/* Brand & Status */}
                 <div className="md:col-span-2 flex flex-col justify-between">
                     <div>
-                        <span className="font-heading font-bold text-2xl tracking-tight block mb-2">MidtownPaintingHomeServices</span>
+                        <span className="font-heading font-bold text-2xl tracking-tight block mb-2">Midtown Painting Home Services</span>
                         <span className="font-body text-sm text-gray-500">Premium residential painting.</span>
                     </div>
 

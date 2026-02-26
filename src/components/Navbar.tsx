@@ -37,12 +37,16 @@ const Navbar = () => {
                     : isPartnerships ? 'bg-transparent text-black drop-shadow-none' : 'bg-transparent text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]'
                     }`}
             >
-                <div className="flex items-center gap-3 relative z-50">
-                    <img src="/images/logo-midtown.png" alt="Midtown Painting Home Services" className="h-10 w-auto object-contain drop-shadow-md" />
-                    <span className="font-heading font-bold text-xl tracking-tight hidden sm:block">
-                        MidtownPaintingHomeServices
-                    </span>
-                </div>
+                <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center gap-3 relative z-50 cursor-pointer hover:opacity-90 transition-opacity">
+                    <img
+                        src="/images/logo-midtown.png"
+                        alt="Midtown Painting Home Services"
+                        className="h-[3.25rem] md:h-14 w-auto object-contain drop-shadow-md"
+                        loading="eager"
+                        decoding="async"
+                        fetchPriority="high"
+                    />
+                </a>
 
                 <div className="hidden lg:flex items-center gap-6 font-body text-sm font-medium">
                     <a href="/#" className="hover-lift">Home</a>
