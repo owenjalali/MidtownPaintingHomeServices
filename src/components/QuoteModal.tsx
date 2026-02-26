@@ -242,6 +242,12 @@ const hasSuspiciousPhonePattern = (phoneNumber: string) => {
     return REPEATING_DIGIT_PATTERN.test(digits) || REPEATING_BLOCK_PATTERN.test(digits);
 };
 
+const fetchWithTimeout = (url: string, opts?: RequestInit, timeoutMs = 45000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(id));
+};
+
 const QuoteModal = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [step, setStep] = useState<'form' | 'calendar' | 'success'>('form');
@@ -366,7 +372,7 @@ const QuoteModal = () => {
         setBookingError('');
 
         try {
-            const response = await fetch(`/api/calendar/availability?month=${month}`);
+            const response = await fetchWithTimeout(`/api/calendar/availability?month=${month}`, undefined, 45000);
             let responseBody: AvailabilityResponse = {
                 month,
                 timezone: 'America/Toronto',
@@ -409,9 +415,11 @@ const QuoteModal = () => {
             setSelectedDate(null);
             setSelectedTime(null);
             setAvailabilityError(
-                error instanceof Error
-                    ? error.message
-                    : 'Unable to load Carter\'s availability right now.'
+                error instanceof DOMException && error.name === 'AbortError'
+                    ? 'Request timed out. Please check your connection and try again.'
+                    : error instanceof Error
+                        ? error.message
+                        : 'Unable to load Carter\'s availability right now.'
             );
         } finally {
             setIsLoadingAvailability(false);
@@ -665,10 +673,10 @@ const QuoteModal = () => {
         uploadedImages.forEach((file) => payload.append('images', file, file.name));
 
         try {
-            const response = await fetch('/api/quote', {
+            const response = await fetchWithTimeout('/api/quote', {
                 method: 'POST',
                 body: payload
-            });
+            }, 60000);
 
             let responseBody: { message?: string } = {};
             try {
@@ -684,9 +692,11 @@ const QuoteModal = () => {
             transitionToCalendar();
         } catch (error) {
             setSubmitError(
-                error instanceof Error
-                    ? error.message
-                    : 'We could not send your request. Please try again.'
+                error instanceof DOMException && error.name === 'AbortError'
+                    ? 'Request timed out. Please check your connection and try again.'
+                    : error instanceof Error
+                        ? error.message
+                        : 'We could not send your request. Please try again.'
             );
         } finally {
             setIsSubmitting(false);
@@ -709,7 +719,7 @@ const QuoteModal = () => {
         setIsBooking(true);
 
         try {
-            const response = await fetch('/api/calendar/booking', {
+            const response = await fetchWithTimeout('/api/calendar/booking', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -731,7 +741,7 @@ const QuoteModal = () => {
                     budget: budget.toString(),
                     callGoal: formValues.callGoal.trim()
                 })
-            });
+            }, 45000);
 
             let responseBody: BookingResponse = {};
             try {
@@ -761,7 +771,9 @@ const QuoteModal = () => {
 
             transitionToSuccess();
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unable to book this slot right now.';
+            const message = error instanceof DOMException && error.name === 'AbortError'
+                ? 'Request timed out. Please check your connection and try again.'
+                : error instanceof Error ? error.message : 'Unable to book this slot right now.';
             setBookingError(message);
 
             if (message.toLowerCase().includes('just booked')) {
@@ -1032,7 +1044,7 @@ const QuoteModal = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-gray-700">Is this interior or exterior work? *</label>
+                                    <label className="text-sm font-bold text-gray-700">What type of work is this? *</label>
                                     <select
                                         required
                                         name="projectType"
@@ -1044,6 +1056,7 @@ const QuoteModal = () => {
                                         <option value="interior">Interior Painting</option>
                                         <option value="exterior">Exterior Painting</option>
                                         <option value="both">Both Interior & Exterior</option>
+                                        <option value="wood-staining">Wood Staining</option>
                                         <option value="other">Other / Not Sure</option>
                                     </select>
                                     {fieldErrors.projectType && (
@@ -1354,7 +1367,7 @@ const QuoteModal = () => {
                             </div>
                             <h2 className="text-4xl font-heading font-bold text-gray-900">Call Scheduled.</h2>
                             <p className="text-gray-500 max-w-md">
-                                You&apos;re all set. We&apos;ve sent confirmation emails and a calendar invite for your booked time.
+                                You&apos;re all set. We&apos;ve sent confirmation emails, and if calendar invites are enabled, you&apos;ll also receive one for your booked time.
                             </p>
                             {confirmedBooking?.reminderLabels && confirmedBooking.reminderLabels.length > 0 && (
                                 <p className="text-sm text-gray-500 max-w-md">

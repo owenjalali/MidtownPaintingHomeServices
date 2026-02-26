@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { logger, task, wait } from "@trigger.dev/sdk";
+import { logger, queue, task, wait } from "@trigger.dev/sdk";
 import { randomBytes } from "node:crypto";
 import { google, type calendar_v3 } from "googleapis";
 import { DateTime } from "luxon";
@@ -92,6 +92,30 @@ type ReminderPayload = {
   clientPhone?: string;
   ownerEmail: string;
   ownerPhone?: string;
+};
+
+type BookingConfirmationPayload = {
+  ownerEmail: string;
+  clientEmail: string;
+  replyTo?: string;
+  ownerSubject: string;
+  ownerText: string;
+  clientSubject: string;
+  clientText: string;
+};
+
+type ManageNotificationPayload = {
+  action: "cancelled" | "rescheduled";
+  actor: ManageActor;
+  reason: string;
+  summary: string;
+  previousDisplay: BookingDisplayDetails;
+  nextDisplay?: BookingDisplayDetails;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string | null;
+  ownerEmail: string;
+  ownerPhone: string | null;
 };
 
 type BookingSettings = {
@@ -242,6 +266,28 @@ const parseBoolean = (value: string | undefined, fallback: boolean) => {
 
   return fallback;
 };
+
+const parsePositiveInteger = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+};
+
+const calendarAvailabilityQueue = queue({
+  name: "calendar-availability",
+  concurrencyLimit: parsePositiveInteger(process.env.BOOKING_AVAILABILITY_QUEUE_CONCURRENCY, 20),
+});
+const calendarBookingQueue = queue({
+  name: "calendar-booking",
+  concurrencyLimit: parsePositiveInteger(process.env.BOOKING_QUEUE_CONCURRENCY, 10),
+});
+const bookingNotificationQueue = queue({
+  name: "booking-notifications",
+  concurrencyLimit: parsePositiveInteger(process.env.BOOKING_NOTIFICATION_QUEUE_CONCURRENCY, 20),
+});
 
 const getFirstName = (fullName: string) => {
   const token = String(fullName || "").trim().split(/\s+/)[0];
@@ -515,7 +561,7 @@ const formatBudgetLabel = (budget?: string) => {
     return "Not provided";
   }
 
-  return `$${numericBudget.toLocaleString()}+`;
+  return `$${numericBudget.toLocaleString("en-CA")}+`;
 };
 
 const createSmtpTransporter = () => {
@@ -678,19 +724,15 @@ const appendAuditTrail = (description: string | null | undefined, lines: string[
 
 const getOwnerBookingEmail = () => process.env.BOOKING_OWNER_EMAIL || process.env.QUOTE_TO_EMAIL || "";
 
-const sendManageNotifications = async (options: {
-  action: "cancelled" | "rescheduled";
-  actor: ManageActor;
-  reason: string;
-  summary: string;
-  previousDisplay: BookingDisplayDetails;
-  nextDisplay?: BookingDisplayDetails;
-  clientName: string;
-  clientEmail: string;
-  clientPhone: string | null;
-  ownerEmail: string;
-  ownerPhone: string | null;
-}) => {
+const getGoogleSendUpdatesMode = () => {
+  const configured = String(process.env.BOOKING_GOOGLE_SEND_UPDATES || "none").trim();
+  if (configured === "all" || configured === "externalOnly" || configured === "none") {
+    return configured;
+  }
+  return "none";
+};
+
+const sendManageNotifications = async (options: ManageNotificationPayload) => {
   const actorLabel = options.actor === "client" ? "Client" : "Carter";
   const normalizedReason = options.reason.replace(/\s+/g, " ").trim();
   const shortReason =
@@ -849,6 +891,15 @@ const sendManageNotifications = async (options: {
   };
 };
 
+const getNotificationChannelAvailability = () => {
+  const missingSmtpVars = getMissingEnvVars(SMTP_REQUIRED_ENV_VARS);
+  const missingTwilioVars = getMissingEnvVars(TWILIO_REQUIRED_ENV_VARS);
+  return {
+    emailEnabled: missingSmtpVars.length === 0,
+    smsEnabled: missingTwilioVars.length === 0,
+  };
+};
+
 const getManageEventContext = async (
   payload: ManageContextPayload,
   options?: {
@@ -1002,6 +1053,7 @@ const buildAvailabilityForMonth = async (
 
 export const calendarGetAvailability = task({
   id: "calendar-get-availability",
+  queue: calendarAvailabilityQueue,
   run: async (payload: { month: string }): Promise<AvailabilityResult> => {
     const missingCalendarEnvVars = getMissingEnvVars(CALENDAR_REQUIRED_ENV_VARS);
     if (missingCalendarEnvVars.length > 0) {
@@ -1149,12 +1201,12 @@ export const bookingSendReminder = task({
       const smsTargets = [
         {
           to: ownerSmsNumber,
-          body: `Midtown Painting Home Services: Hey Carter - reminder: call with ${fullName} in ${reminderLeadMinutes}m (${displayTime}). ${projectType || "Painting"} | ${projectSummary}. Location: ${projectAddressSms}`,
+          body: `Midtown Painting Home Services: Reminder - appointment with ${fullName} is ${displayDate} at ${displayTime}, in ${reminderLeadMinutes}m. ${projectType || "Painting"} | ${projectSummary}. Location: ${projectAddressSms}`,
           target: "owner",
         },
         {
           to: clientSmsNumber,
-          body: `Midtown Painting Home Services: Hey ${clientFirstName} - reminder: your call with Carter is in ${reminderLeadMinutes}m (${displayTime}). We will discuss: ${projectSummary}. Location: ${projectAddressSms}`,
+          body: `Midtown Painting Home Services: Reminder - your appointment with Carter Jenkins is ${displayDate} at ${displayTime}, in ${reminderLeadMinutes}m. ${projectSummary}. Location: ${projectAddressSms}`,
           target: "client",
         },
       ] as const;
@@ -1188,7 +1240,7 @@ export const bookingSendReminder = task({
         smsTargetsByPhone.set(sms.to, {
           to: sms.to,
           target: "owner+client",
-          body: `Midtown Painting Home Services: Reminder: consultation with Carter and ${fullName} starts in ${reminderLeadMinutes}m (${displayTime}). ${projectType || "Painting"} | ${projectSummary}. Location: ${projectAddressSms}`,
+          body: `Midtown Painting Home Services: Reminder - appointment with Carter Jenkins and ${fullName} is ${displayDate} at ${displayTime}, in ${reminderLeadMinutes}m. ${projectType || "Painting"} | ${projectSummary}. Location: ${projectAddressSms}`,
         });
 
         logger.info("Deduplicated reminder SMS recipient because owner and client share a phone number", {
@@ -1237,8 +1289,87 @@ export const bookingSendReminder = task({
   },
 });
 
+export const bookingSendConfirmationEmail = task({
+  id: "booking-send-confirmation-email",
+  queue: bookingNotificationQueue,
+  run: async (payload: BookingConfirmationPayload) => {
+    const missingSmtpEnvVars = getMissingEnvVars(SMTP_REQUIRED_ENV_VARS);
+    if (missingSmtpEnvVars.length > 0) {
+      throw new Error(`Missing required SMTP configuration: ${missingSmtpEnvVars.join(", ")}`);
+    }
+
+    const {
+      ownerEmail = "",
+      clientEmail = "",
+      replyTo = "",
+      ownerSubject = "",
+      ownerText = "",
+      clientSubject = "",
+      clientText = "",
+    } = payload ?? {};
+
+    if (!ownerEmail || !ownerSubject || !ownerText || !clientSubject || !clientText) {
+      throw new Error("Missing required booking confirmation email details.");
+    }
+
+    const transporter = createSmtpTransporter();
+    await Promise.all([
+      transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: ownerEmail,
+        replyTo: replyTo || undefined,
+        subject: ownerSubject,
+        text: ownerText,
+      }),
+      clientEmail
+        ? transporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: clientEmail,
+            subject: clientSubject,
+            text: clientText,
+          })
+        : Promise.resolve(),
+    ]);
+
+    logger.info("Booking confirmation emails sent", {
+      ownerEmail,
+      clientEmail,
+    });
+
+    return {
+      sent: true,
+      ownerEmail,
+      clientEmail,
+    };
+  },
+});
+
+export const bookingSendManageNotifications = task({
+  id: "booking-send-manage-notifications",
+  queue: bookingNotificationQueue,
+  run: async (payload: ManageNotificationPayload) => sendManageNotifications(payload),
+});
+
+export const calendarWorkerKeepalive = task({
+  id: "calendar-worker-keepalive",
+  run: async () => ({
+    ok: true,
+    at: new Date().toISOString(),
+  }),
+});
+
+export const calendarBookingKeepalive = task({
+  id: "calendar-booking-keepalive",
+  queue: calendarBookingQueue,
+  run: async () => ({
+    ok: true,
+    at: new Date().toISOString(),
+  }),
+});
+
 export const calendarBookSlot = task({
   id: "calendar-book-slot",
+  queue: calendarBookingQueue,
   run: async (payload: BookingPayload): Promise<BookingResult> => {
     const missingCalendarEnvVars = getMissingEnvVars(CALENDAR_REQUIRED_ENV_VARS);
     if (missingCalendarEnvVars.length > 0) {
@@ -1387,10 +1518,11 @@ export const calendarBookSlot = task({
 
     const clientManageToken = createManageToken();
     const carterManageToken = createManageToken();
+    const googleSendUpdatesMode = getGoogleSendUpdatesMode();
 
     const eventInsertResponse = await calendarClient.events.insert({
       calendarId,
-      sendUpdates: "all",
+      sendUpdates: googleSendUpdatesMode,
       requestBody: {
         summary: `Midtown Painting Home Services - 15-Min Consultation - ${normalizedFullName}`,
         description: bookingSummary,
@@ -1428,7 +1560,6 @@ export const calendarBookSlot = task({
     const displayDate = slotStart.toFormat("cccc, LLLL d");
     const displayTime = `${slotStart.toFormat("h:mm a")} (${slotStart.offsetNameShort || settings.timezone})`;
     const ownerEmail = getOwnerBookingEmail();
-    const transporter = createSmtpTransporter();
 
     const ownerLines = [
       `A 15-minute consultation was booked with ${normalizedFullName}.`,
@@ -1472,21 +1603,31 @@ export const calendarBookSlot = task({
       "Midtown Painting Home Services",
     ].join("\n");
 
-    await Promise.all([
-      transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: ownerEmail,
-        replyTo: normalizedEmail,
-        subject: `New Phone Consultation Booked - ${normalizedFullName}`,
-        text: ownerLines,
-      }),
-      transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: normalizedEmail,
-        subject: "Your Midtown Painting Home Services Call Is Confirmed",
-        text: customerLines,
-      }),
-    ]);
+    try {
+      const confirmationHandle = await bookingSendConfirmationEmail.trigger(
+        {
+          ownerEmail,
+          clientEmail: normalizedEmail,
+          replyTo: normalizedEmail,
+          ownerSubject: `New Phone Consultation Booked - ${normalizedFullName}`,
+          ownerText: ownerLines,
+          clientSubject: "Your Midtown Painting Home Services Call Is Confirmed",
+          clientText: customerLines,
+        },
+        {
+          ttl: process.env.BOOKING_CONFIRMATION_EMAIL_TTL || "2h",
+        }
+      );
+      logger.info("Queued booking confirmation email task", {
+        runId: getRunIdFromHandle(confirmationHandle),
+        eventId,
+      });
+    } catch (error) {
+      logger.warn("Unable to queue booking confirmation email task", {
+        eventId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     const reminderRunTtl = process.env.BOOKING_REMINDER_RUN_TTL || "24h";
     const bookingStartIsoUtc = slotStart.toUTC().toISO() as string;
@@ -1504,80 +1645,94 @@ export const calendarBookSlot = task({
         sendEmail: parseBoolean(process.env.BOOKING_REMINDER_2_SEND_EMAIL, false),
         sendSms: parseBoolean(process.env.BOOKING_REMINDER_2_SEND_SMS, true),
       },
+      {
+        reminderMinutesBefore: Number(process.env.BOOKING_REMINDER_3_MINUTES_BEFORE || 5),
+        sendEmail: parseBoolean(process.env.BOOKING_REMINDER_3_SEND_EMAIL, false),
+        sendSms: parseBoolean(process.env.BOOKING_REMINDER_3_SEND_SMS, false),
+      },
     ] as const;
 
-    for (const reminderConfig of reminderConfigs) {
-      if (!reminderConfig.sendEmail && !reminderConfig.sendSms) {
-        continue;
-      }
+    const reminderDispatches = await Promise.all(
+      reminderConfigs.map(async (reminderConfig) => {
+        if (!reminderConfig.sendEmail && !reminderConfig.sendSms) {
+          return null;
+        }
 
-      if (
-        !Number.isFinite(reminderConfig.reminderMinutesBefore) ||
-        reminderConfig.reminderMinutesBefore < 1
-      ) {
-        logger.warn("Skipping reminder trigger because reminder offset is invalid", {
+        if (
+          !Number.isFinite(reminderConfig.reminderMinutesBefore) ||
+          reminderConfig.reminderMinutesBefore < 1
+        ) {
+          logger.warn("Skipping reminder trigger because reminder offset is invalid", {
+            reminderMinutesBefore: reminderConfig.reminderMinutesBefore,
+          });
+          return null;
+        }
+
+        const reminderAt = slotStart.minus({ minutes: reminderConfig.reminderMinutesBefore });
+        const triggerOptions: { delay?: Date; ttl: string } = {
+          ttl: reminderRunTtl,
+        };
+        const delayApplied = reminderAt > nowInBookingTimezone;
+
+        if (delayApplied) {
+          triggerOptions.delay = reminderAt.toJSDate();
+        }
+
+        const reminderHandle = await bookingSendReminder.trigger(
+          {
+            bookingStartIso: bookingStartIsoUtc,
+            timezone: settings.timezone,
+            reminderMinutesBefore: reminderConfig.reminderMinutesBefore,
+            sendEmail: reminderConfig.sendEmail,
+            sendSms: reminderConfig.sendSms,
+            fullName: normalizedFullName,
+            projectType: normalizedProjectType,
+            projectDetails: normalizedProjectDetails,
+            callGoal: normalizedCallGoal,
+            addressLine1: normalizedAddressLine1,
+            city: normalizedCity,
+            postalCode: normalizedPostalCode,
+            country: normalizedCountry,
+            provinceState: normalizedProvinceState,
+            clientEmail: normalizedEmail,
+            clientPhone: normalizedPhone,
+            ownerEmail,
+            ownerPhone,
+          },
+          triggerOptions
+        );
+
+        const runId = getRunIdFromHandle(reminderHandle);
+        const reminderAtIso = reminderAt.toUTC().toISO() as string;
+        const reminderAtLabel = `${reminderAt.toFormat("cccc, LLLL d 'at' h:mm a")} (${reminderAt.offsetNameShort || settings.timezone})`;
+
+        logger.info("Scheduled booking reminder run", {
+          runId,
           reminderMinutesBefore: reminderConfig.reminderMinutesBefore,
+          reminderAtIso,
+          delayApplied,
+          ttl: reminderRunTtl,
+          sendEmail: reminderConfig.sendEmail,
+          sendSms: reminderConfig.sendSms,
         });
-        continue;
-      }
 
-      const reminderAt = slotStart.minus({ minutes: reminderConfig.reminderMinutesBefore });
-      const triggerOptions: { delay?: Date; ttl: string } = {
-        ttl: reminderRunTtl,
-      };
-      const delayApplied = reminderAt > nowInBookingTimezone;
-
-      if (delayApplied) {
-        triggerOptions.delay = reminderAt.toJSDate();
-      }
-
-      const reminderHandle = await bookingSendReminder.trigger(
-        {
-          bookingStartIso: bookingStartIsoUtc,
-          timezone: settings.timezone,
+        return {
           reminderMinutesBefore: reminderConfig.reminderMinutesBefore,
           sendEmail: reminderConfig.sendEmail,
           sendSms: reminderConfig.sendSms,
-          fullName: normalizedFullName,
-          projectType: normalizedProjectType,
-          projectDetails: normalizedProjectDetails,
-          callGoal: normalizedCallGoal,
-          addressLine1: normalizedAddressLine1,
-          city: normalizedCity,
-          postalCode: normalizedPostalCode,
-          country: normalizedCountry,
-          provinceState: normalizedProvinceState,
-          clientEmail: normalizedEmail,
-          clientPhone: normalizedPhone,
-          ownerEmail,
-          ownerPhone,
-        },
-        triggerOptions
-      );
+          reminderAtIso,
+          reminderAtLabel,
+          runId,
+          delayApplied,
+        };
+      })
+    );
 
-      const runId = getRunIdFromHandle(reminderHandle);
-      const reminderAtIso = reminderAt.toUTC().toISO() as string;
-      const reminderAtLabel = `${reminderAt.toFormat("cccc, LLLL d 'at' h:mm a")} (${reminderAt.offsetNameShort || settings.timezone})`;
-
-      reminderSchedules.push({
-        reminderMinutesBefore: reminderConfig.reminderMinutesBefore,
-        sendEmail: reminderConfig.sendEmail,
-        sendSms: reminderConfig.sendSms,
-        reminderAtIso,
-        reminderAtLabel,
-        runId,
-        delayApplied,
-      });
-
-      logger.info("Scheduled booking reminder run", {
-        runId,
-        reminderMinutesBefore: reminderConfig.reminderMinutesBefore,
-        reminderAtIso,
-        delayApplied,
-        ttl: reminderRunTtl,
-        sendEmail: reminderConfig.sendEmail,
-        sendSms: reminderConfig.sendSms,
-      });
+    for (const reminderDispatch of reminderDispatches) {
+      if (!reminderDispatch) {
+        continue;
+      }
+      reminderSchedules.push(reminderDispatch);
     }
 
     logger.info("Calendar slot booked", {
@@ -1676,7 +1831,7 @@ export const calendarManageCancel = task({
       await calendarClient.events.patch({
         calendarId,
         eventId: context.eventId,
-        sendUpdates: "all",
+        sendUpdates: getGoogleSendUpdatesMode(),
         requestBody: {
           status: "cancelled",
           description: appendAuditTrail(context.event.description, [
@@ -1691,7 +1846,7 @@ export const calendarManageCancel = task({
         },
       });
 
-      const notifications = await sendManageNotifications({
+      const notificationPayload: ManageNotificationPayload = {
         action: "cancelled",
         actor: context.actor,
         reason,
@@ -1702,7 +1857,39 @@ export const calendarManageCancel = task({
         clientPhone: context.clientPhone,
         ownerEmail: getOwnerBookingEmail(),
         ownerPhone: normalizePhoneForTwilio(process.env.BOOKING_OWNER_PHONE),
-      });
+      };
+      const channelAvailability = getNotificationChannelAvailability();
+      let notifications = {
+        emailAttempted: channelAvailability.emailEnabled,
+        emailSent: false,
+        smsAttempted: channelAvailability.smsEnabled,
+        smsSent: false,
+      };
+
+      try {
+        const notificationsHandle = await bookingSendManageNotifications.trigger(notificationPayload, {
+          ttl: process.env.BOOKING_MANAGE_NOTIFICATIONS_TTL || "2h",
+        });
+        logger.info("Queued manage-booking notifications task", {
+          runId: getRunIdFromHandle(notificationsHandle),
+          eventId: context.eventId,
+          action: "cancel",
+          actor: context.actor,
+        });
+      } catch (error) {
+        notifications = {
+          emailAttempted: false,
+          emailSent: false,
+          smsAttempted: false,
+          smsSent: false,
+        };
+        logger.warn("Unable to queue manage-booking notifications task", {
+          eventId: context.eventId,
+          action: "cancel",
+          actor: context.actor,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
 
       logger.info("Booking canceled through manage flow", {
         eventId: context.eventId,
@@ -1835,7 +2022,7 @@ export const calendarManageReschedule = task({
       const patchResponse = await calendarClient.events.patch({
         calendarId,
         eventId: context.eventId,
-        sendUpdates: "all",
+        sendUpdates: getGoogleSendUpdatesMode(),
         requestBody: {
           status: "confirmed",
           start: {
@@ -1862,7 +2049,7 @@ export const calendarManageReschedule = task({
 
       const updatedEvent = patchResponse.data;
       const updatedDisplay = getEventDisplayDetails(updatedEvent, settings.timezone);
-      const notifications = await sendManageNotifications({
+      const notificationPayload: ManageNotificationPayload = {
         action: "rescheduled",
         actor: context.actor,
         reason,
@@ -1874,7 +2061,39 @@ export const calendarManageReschedule = task({
         clientPhone: context.clientPhone,
         ownerEmail: getOwnerBookingEmail(),
         ownerPhone: normalizePhoneForTwilio(process.env.BOOKING_OWNER_PHONE),
-      });
+      };
+      const channelAvailability = getNotificationChannelAvailability();
+      let notifications = {
+        emailAttempted: channelAvailability.emailEnabled,
+        emailSent: false,
+        smsAttempted: channelAvailability.smsEnabled,
+        smsSent: false,
+      };
+
+      try {
+        const notificationsHandle = await bookingSendManageNotifications.trigger(notificationPayload, {
+          ttl: process.env.BOOKING_MANAGE_NOTIFICATIONS_TTL || "2h",
+        });
+        logger.info("Queued manage-booking notifications task", {
+          runId: getRunIdFromHandle(notificationsHandle),
+          eventId: context.eventId,
+          action: "reschedule",
+          actor: context.actor,
+        });
+      } catch (error) {
+        notifications = {
+          emailAttempted: false,
+          emailSent: false,
+          smsAttempted: false,
+          smsSent: false,
+        };
+        logger.warn("Unable to queue manage-booking notifications task", {
+          eventId: context.eventId,
+          action: "reschedule",
+          actor: context.actor,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
 
       logger.info("Booking rescheduled through manage flow", {
         eventId: context.eventId,

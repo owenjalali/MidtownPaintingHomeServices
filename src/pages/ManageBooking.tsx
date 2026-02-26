@@ -82,6 +82,12 @@ const normalizeActor = (value: string | null): ManageActor | null => {
   return null;
 };
 
+const fetchWithTimeout = (url: string, opts?: RequestInit, timeoutMs = 45000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(id));
+};
+
 const ManageBooking = () => {
   const [searchParams] = useSearchParams();
   const credentials = useMemo<ManageCredentials | null>(() => {
@@ -147,7 +153,7 @@ const ManageBooking = () => {
         actor: credentials.actor,
         token: credentials.token,
       });
-      const response = await fetch(`/api/calendar/manage/context?${params.toString()}`);
+      const response = await fetchWithTimeout(`/api/calendar/manage/context?${params.toString()}`, undefined, 30000);
 
       let responseBody: ManageBookingContextResponse | { message?: string } = {};
       try {
@@ -168,7 +174,11 @@ const ManageBooking = () => {
         setCurrentMonth(toMonthStart(bookingDate));
       }
     } catch (error) {
-      setContextError(error instanceof Error ? error.message : "Unable to load booking details.");
+      setContextError(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Request timed out. Please check your connection and try again."
+          : error instanceof Error ? error.message : "Unable to load booking details."
+      );
       setContext(null);
     } finally {
       setIsLoadingContext(false);
@@ -182,7 +192,7 @@ const ManageBooking = () => {
 
       try {
         const month = getMonthParam(monthDate);
-        const response = await fetch(`/api/calendar/availability?month=${month}`);
+        const response = await fetchWithTimeout(`/api/calendar/availability?month=${month}`, undefined, 45000);
 
         let responseBody: AvailabilityResponse | { message?: string } = {
           availabilityByDate: {},
@@ -227,7 +237,11 @@ const ManageBooking = () => {
         setAvailableDates([]);
         setSelectedDate("");
         setSelectedTime("");
-        setAvailabilityError(error instanceof Error ? error.message : "Unable to load availability.");
+        setAvailabilityError(
+          error instanceof DOMException && error.name === "AbortError"
+            ? "Request timed out. Please check your connection and try again."
+            : error instanceof Error ? error.message : "Unable to load availability."
+        );
       } finally {
         setIsLoadingAvailability(false);
       }
@@ -278,7 +292,7 @@ const ManageBooking = () => {
     setActionSuccess("");
 
     try {
-      const response = await fetch("/api/calendar/manage/cancel", {
+      const response = await fetchWithTimeout("/api/calendar/manage/cancel", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -289,7 +303,7 @@ const ManageBooking = () => {
           token: credentials.token,
           reason: reason.trim(),
         }),
-      });
+      }, 30000);
 
       let responseBody: BookingActionResponse = {};
       try {
@@ -307,7 +321,11 @@ const ManageBooking = () => {
       setReason("");
       await loadContext();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Unable to cancel this booking.");
+      setActionError(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Request timed out. Please check your connection and try again."
+          : error instanceof Error ? error.message : "Unable to cancel this booking."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -328,7 +346,7 @@ const ManageBooking = () => {
     setActionSuccess("");
 
     try {
-      const response = await fetch("/api/calendar/manage/reschedule", {
+      const response = await fetchWithTimeout("/api/calendar/manage/reschedule", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -340,7 +358,7 @@ const ManageBooking = () => {
           reason: reason.trim(),
           newSlotStartIso: selectedTime,
         }),
-      });
+      }, 30000);
 
       let responseBody: BookingActionResponse = {};
       try {
@@ -358,7 +376,11 @@ const ManageBooking = () => {
       setReason("");
       await loadContext();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Unable to reschedule this booking.");
+      setActionError(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Request timed out. Please check your connection and try again."
+          : error instanceof Error ? error.message : "Unable to reschedule this booking."
+      );
     } finally {
       setIsSubmitting(false);
     }
