@@ -84,7 +84,7 @@ const Protocol = () => {
             {protocols.map((p, i) => (
                 <div
                     key={i}
-                    className={`protocol-card sticky top-0 h-[100dvh] w-full flex flex-col justify-center items-center px-6 ${p.color} ${p.textMode} rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] origin-top z-[${10 + i}] border-b border-black/10 overflow-hidden relative`}
+                    className={`protocol-card sticky top-0 h-[100dvh] w-full flex flex-col justify-center items-center px-4 sm:px-6 ${p.color} ${p.textMode} rounded-b-[2rem] sm:rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] origin-top z-[${10 + i}] border-b border-black/10 overflow-hidden relative`}
                 >
                     {/* Background Image heavily dimmed to strictly serve as texture */}
                     <LazyImage
@@ -97,11 +97,11 @@ const Protocol = () => {
 
                     <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col justify-center items-center text-center">
                         {/* Content */}
-                        <div className="flex flex-col gap-6 items-center">
-                            <h2 className="font-heading text-5xl md:text-7xl font-bold tracking-tight">
+                        <div className="flex flex-col gap-4 sm:gap-6 items-center">
+                            <h2 className="font-heading text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight">
                                 {p.step}. {p.title}
                             </h2>
-                            <p className="font-body text-xl md:text-3xl max-w-2xl font-light opacity-90 border-t-2 border-accent pt-6 mt-2">
+                            <p className="font-body text-base sm:text-xl md:text-3xl max-w-2xl font-light opacity-90 border-t-2 border-accent pt-4 sm:pt-6 mt-1 sm:mt-2">
                                 {p.desc}
                             </p>
                         </div>

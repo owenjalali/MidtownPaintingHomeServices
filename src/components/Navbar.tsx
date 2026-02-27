@@ -32,7 +32,7 @@ const Navbar = () => {
         <>
             <nav
                 ref={navRef}
-                className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl rounded-[2rem] px-6 py-4 transition-all duration-500 flex items-center justify-between ${isScrolled || isMobileMenuOpen
+                className={`fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-50 w-[94%] sm:w-[95%] max-w-7xl rounded-[1.5rem] sm:rounded-[2rem] px-4 sm:px-6 py-3 sm:py-4 transition-all duration-500 flex items-center justify-between ${isScrolled || isMobileMenuOpen
                     ? 'glass-nav text-black shadow-sm bg-white'
                     : isPartnerships ? 'bg-transparent text-black drop-shadow-none' : 'bg-transparent text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]'
                     }`}

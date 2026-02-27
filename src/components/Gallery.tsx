@@ -32,8 +32,9 @@ const galleryData = {
 
 const getSpanForIndex = (index: number) => {
     // Return a repeating pattern of spans for variety
+    // On mobile (2-col): keep col-span-2 full-width but limit row-span to 1 to prevent oversized images
     const pattern = [
-        'col-span-2 row-span-2 md:col-span-2',
+        'col-span-2 row-span-1 sm:row-span-2 md:col-span-2',
         'col-span-1 row-span-1',
         'col-span-1 row-span-1',
         'col-span-2 row-span-1 md:col-span-2'
@@ -92,25 +93,25 @@ const Gallery = () => {
     }, [activeTab]);
 
     return (
-        <section id="gallery" className="py-32 md:py-48 bg-background w-full">
-            <div className="max-w-7xl mx-auto px-6 lg:px-12">
-                <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <section id="gallery" className="py-20 sm:py-32 md:py-48 bg-background w-full">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+                <div className="mb-8 sm:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
                     <div>
-                        <h2 className="text-4xl md:text-5xl font-heading font-bold text-foreground">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-heading font-bold text-foreground">
                             Verification.
                         </h2>
-                        <p className="mt-2 text-lg font-body text-gray-600">
+                        <p className="mt-2 text-base sm:text-lg font-body text-gray-600">
                             The output of our methodology. Pick a discipline:
                         </p>
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex gap-2 p-1 bg-gray-100 rounded-full border border-gray-200 overflow-x-auto whitespace-nowrap">
+                    <div className="flex gap-1 sm:gap-2 p-1 bg-gray-100 rounded-full border border-gray-200 overflow-x-auto whitespace-nowrap">
                         {(['interior', 'exterior', 'wood'] as Tab[]).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-6 py-2 rounded-full font-body font-semibold text-sm transition-all duration-300 ${activeTab === tab ? 'bg-white shadow-sm text-foreground' : 'text-gray-500 hover:text-foreground'}`}
+                                className={`px-4 sm:px-6 py-2 rounded-full font-body font-semibold text-xs sm:text-sm transition-all duration-300 ${activeTab === tab ? 'bg-white shadow-sm text-foreground' : 'text-gray-500 hover:text-foreground'}`}
                             >
                                 {tab === 'interior' && 'Interior'}
                                 {tab === 'exterior' && 'Exterior'}
@@ -121,12 +122,12 @@ const Gallery = () => {
                 </div>
 
                 {/* Tab Content */}
-                <div className="mb-8 transition-opacity duration-300">
-                    <h3 className="text-2xl font-bold font-heading text-primary">{galleryData[activeTab].title}</h3>
-                    <p className="text-gray-600 font-body text-lg max-w-2xl">{galleryData[activeTab].desc}</p>
+                <div className="mb-6 sm:mb-8 transition-opacity duration-300">
+                    <h3 className="text-xl sm:text-2xl font-bold font-heading text-primary">{galleryData[activeTab].title}</h3>
+                    <p className="text-gray-600 font-body text-base sm:text-lg max-w-2xl">{galleryData[activeTab].desc}</p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[250px] transition-all duration-500">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 auto-rows-[180px] sm:auto-rows-[250px] transition-all duration-500">
                     {activeImages.map((img, i) => (
                         <div
                             key={`${activeTab}-${img.src}`}
@@ -154,37 +155,37 @@ const Gallery = () => {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm transition-opacity duration-300" onClick={closeLightbox}>
                     <button
                         onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
-                        className="absolute top-6 right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all z-50"
+                        className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all z-50"
                     >
-                        <X className="w-8 h-8" />
+                        <X className="w-6 h-6 sm:w-8 sm:h-8" />
                     </button>
 
                     <button
                         onClick={prevImage}
-                        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-3 transition-all z-50"
+                        className="absolute left-2 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 sm:p-3 transition-all z-50"
                     >
-                        <ChevronLeft className="w-8 h-8 md:w-10 md:h-10" />
+                        <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" />
                     </button>
 
                     <button
                         onClick={nextImage}
-                        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-3 transition-all z-50"
+                        className="absolute right-2 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 sm:p-3 transition-all z-50"
                     >
-                        <ChevronRight className="w-8 h-8 md:w-10 md:h-10" />
+                        <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" />
                     </button>
 
-                    <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center p-4">
+                    <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center px-12 sm:px-16 md:px-4 py-4">
                         <img
                             src={activeImages[currentImageIndex].src}
                             alt={activeImages[currentImageIndex].alt}
                             className="max-w-full max-h-full object-contain drop-shadow-2xl select-none"
                             loading="eager"
                             decoding="async"
-                            onClick={(e) => e.stopPropagation()} // Prevent click through to background
+                            onClick={(e) => e.stopPropagation()}
                         />
                     </div>
 
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 font-data text-sm tracking-widest bg-black/50 px-4 py-2 rounded-full">
+                    <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 text-white/70 font-data text-xs sm:text-sm tracking-widest bg-black/50 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
                         {currentImageIndex + 1} / {activeImages.length}
                     </div>
                 </div>

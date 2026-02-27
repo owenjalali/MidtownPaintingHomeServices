@@ -55,40 +55,40 @@ const FAQ = () => {
     };
 
     return (
-        <section id="faq" ref={sectionRef} className="py-24 md:py-32 bg-background w-full overflow-hidden border-t border-black/10">
-            <div className="max-w-4xl mx-auto px-6 lg:px-12 flex flex-col gap-12">
+        <section id="faq" ref={sectionRef} className="py-16 sm:py-24 md:py-32 bg-background w-full overflow-hidden border-t border-black/10">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 flex flex-col gap-8 sm:gap-12">
                 <div className="faq-reveal text-center">
-                    <span className="font-data text-primary text-sm uppercase tracking-widest font-bold">
+                    <span className="font-data text-primary text-xs sm:text-sm uppercase tracking-widest font-bold">
                         Frequently Asked Questions
                     </span>
-                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mt-4 leading-[1.1] text-foreground">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-heading font-bold mt-3 sm:mt-4 leading-[1.1] text-foreground">
                         Everything you need to know
                     </h2>
                 </div>
 
-                <div className="flex flex-col gap-4 mt-8">
+                <div className="flex flex-col gap-3 sm:gap-4 mt-4 sm:mt-8">
                     {faqs.map((faq, index) => {
                         const isOpen = openIndex === index;
 
                         return (
                             <div
                                 key={index}
-                                className="faq-reveal bg-card border border-black/10 rounded-[2rem] overflow-hidden hover-lift transition-shadow duration-300 hover:shadow-lg"
+                                className="faq-reveal bg-card border border-black/10 rounded-[1.25rem] sm:rounded-[2rem] overflow-hidden hover-lift transition-shadow duration-300 hover:shadow-lg"
                             >
                                 <button
                                     onClick={() => toggleOpen(index)}
-                                    className="w-full text-left px-6 py-6 lg:px-8 lg:py-8 flex justify-between items-center bg-transparent focus:outline-none cursor-pointer"
+                                    className="w-full text-left px-5 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 flex justify-between items-center bg-transparent focus:outline-none cursor-pointer"
                                     aria-expanded={isOpen}
                                 >
-                                    <span className="font-heading font-bold text-xl md:text-2xl text-foreground pr-8">
+                                    <span className="font-heading font-bold text-lg sm:text-xl md:text-2xl text-foreground pr-4 sm:pr-8">
                                         {faq.question}
                                     </span>
                                     <motion.div
                                         animate={{ rotate: isOpen ? 45 : 0 }}
                                         transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                        className="flex-shrink-0 w-10 h-10 rounded-full bg-black/5 flex items-center justify-center text-primary"
+                                        className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/5 flex items-center justify-center text-primary"
                                     >
-                                        <Plus className="w-5 h-5" />
+                                        <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </motion.div>
                                 </button>
 
@@ -101,7 +101,7 @@ const FAQ = () => {
                                             transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                                             className="overflow-hidden"
                                         >
-                                            <div className="px-6 pb-6 lg:px-8 lg:pb-8 pt-0 font-body text-lg text-gray-700 leading-relaxed">
+                                            <div className="px-5 pb-5 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8 pt-0 font-body text-base sm:text-lg text-gray-700 leading-relaxed">
                                                 <div className="pt-4 border-t border-black/5">
                                                     {faq.answer}
                                                 </div>

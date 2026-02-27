@@ -59,7 +59,7 @@ const Philosophy = () => {
     return (
         <section
             ref={sectionRef}
-            className="relative w-full py-32 md:py-48 bg-foreground text-[#E8E4DD] overflow-hidden"
+            className="relative w-full py-20 sm:py-32 md:py-48 bg-foreground text-[#E8E4DD] overflow-hidden"
         >
             {/* Background Texture Overlay */}
             <LazyImage
@@ -70,18 +70,18 @@ const Philosophy = () => {
                 sizes="100vw"
             />
 
-            <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10" ref={triggerRef}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10" ref={triggerRef}>
 
                 {/* Contrast Statement 1 */}
-                <div className="statement-1 mb-8 opacity-60">
-                    <p className="font-body text-xl md:text-2xl tracking-tight">
+                <div className="statement-1 mb-6 sm:mb-8 opacity-60">
+                    <p className="font-body text-base sm:text-xl md:text-2xl tracking-tight">
                         <SplitText text="Most contractors focus on: speed, compromise, and cutting corners." />
                     </p>
                 </div>
 
                 {/* Contrast Statement 2 (The Manifesto hook) */}
                 <div className="statement-2 max-w-5xl">
-                    <p className="font-heading font-bold text-4xl md:text-6xl lg:text-7xl leading-[1.1] tracking-tight">
+                    <p className="font-heading font-bold text-[1.75rem] sm:text-4xl md:text-6xl lg:text-7xl leading-[1.1] tracking-tight">
                         <SplitText text="We focus on:" />
                         <br />
                         <SplitText text="flawless execution and" />

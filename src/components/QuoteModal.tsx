@@ -860,7 +860,7 @@ const QuoteModal = () => {
     if (!isOpen) return null;
 
     return (
-        <div ref={modalRef} className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 opacity-0">
+        <div ref={modalRef} className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6 opacity-0">
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-md"
                 onClick={handleClose}
@@ -868,25 +868,25 @@ const QuoteModal = () => {
 
             <div
                 ref={contentRef}
-                className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-[2rem] shadow-2xl custom-scrollbar"
+                className="relative w-full sm:max-w-3xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto bg-white rounded-t-[1.5rem] sm:rounded-[2rem] shadow-2xl custom-scrollbar"
                 style={{ opacity: 0 }}
             >
                 <button
                     onClick={handleClose}
-                    className="absolute top-6 right-6 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors z-10"
+                    className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors z-10"
                 >
-                    <X size={20} />
+                    <X className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
                 </button>
 
-                <div className="p-8 md:p-12">
+                <div className="p-5 sm:p-8 md:p-12">
                     {step === 'form' && (
-                        <div className="space-y-8">
-                            <div>
-                                <h2 className="text-3xl font-heading font-bold text-gray-900">Request a Quote</h2>
-                                <p className="text-gray-500 font-body mt-2">Let's discuss your vision. Fill out the details below to schedule a call with Carter Jenkins.</p>
+                        <div className="space-y-6 sm:space-y-8">
+                            <div className="pr-8">
+                                <h2 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900">Request a Quote</h2>
+                                <p className="text-gray-500 font-body mt-2 text-sm sm:text-base">Let's discuss your vision. Fill out the details below to schedule a call with Carter Jenkins.</p>
                             </div>
 
-                            <form onSubmit={handleFormSubmit} className="space-y-6 font-body">
+                            <form onSubmit={handleFormSubmit} className="space-y-5 sm:space-y-6 font-body">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-gray-700">Full Name *</label>
@@ -1080,7 +1080,7 @@ const QuoteModal = () => {
                                     )}
                                 </div>
 
-                                <div className="space-y-2 p-6 bg-gray-50 rounded-[1.5rem] border border-gray-100">
+                                <div className="space-y-2 p-4 sm:p-6 bg-gray-50 rounded-[1.25rem] sm:rounded-[1.5rem] border border-gray-100">
                                     <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-2 mb-4">
                                         <div>
                                             <label className="text-sm font-bold text-gray-700">Ideal budget expectation (Optional)</label>
@@ -1193,28 +1193,28 @@ const QuoteModal = () => {
                     )}
 
                     {step === 'calendar' && (
-                        <div className="space-y-8 font-body">
-                            <div className="flex items-center gap-4 mb-6">
+                        <div className="space-y-6 sm:space-y-8 font-body">
+                            <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                                 <button
                                     onClick={() => setStep('form')}
-                                    className="text-gray-400 hover:text-gray-800 transition-colors"
+                                    className="text-gray-400 hover:text-gray-800 transition-colors text-sm sm:text-base"
                                 >
                                     Back
                                 </button>
                                 <div className="h-4 w-[1px] bg-gray-200"></div>
-                                <span className="text-sm font-bold text-primary uppercase tracking-widest">Step 2 of 2</span>
+                                <span className="text-xs sm:text-sm font-bold text-primary uppercase tracking-widest">Step 2 of 2</span>
                             </div>
 
-                            <div>
-                                <h2 className="text-3xl font-heading font-bold text-gray-900">Select a Time</h2>
-                                <p className="text-gray-500 mt-2">
+                            <div className="pr-8">
+                                <h2 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900">Select a Time</h2>
+                                <p className="text-gray-500 mt-2 text-sm sm:text-base">
                                     15-Minute Consultation with <span className="font-bold text-gray-800">Carter Jenkins</span>
                                 </p>
                                 <p className="text-xs text-gray-400 mt-1">Availability syncs directly with Carter&apos;s calendar.</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-100">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="font-bold text-gray-800">{calendarMonthLabel}</h3>
                                         <div className="flex gap-2">
@@ -1281,7 +1281,7 @@ const QuoteModal = () => {
                                     </p>
                                 </div>
 
-                                <div className="flex flex-col gap-3 h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="flex flex-col gap-3 max-h-[250px] sm:h-[320px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
                                     <h3 className="font-bold text-gray-800 mb-2">{selectedDateLabel}</h3>
 
                                     {isLoadingAvailability && (
