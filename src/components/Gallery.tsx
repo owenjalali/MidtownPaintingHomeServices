@@ -7,7 +7,7 @@ type Tab = 'interior' | 'exterior' | 'wood';
 // Helper to generate image arrays
 const generateImages = (prefix: string, count: number) => {
     return Array.from({ length: count }, (_, i) => ({
-        src: `/images/gallery/${prefix}/${prefix}-${i + 1}.png`,
+        src: `/images/gallery/${prefix}/${prefix}-${i + 1}.webp`,
         alt: `${prefix} work ${i + 1}`
     }));
 };

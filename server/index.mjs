@@ -1593,6 +1593,16 @@ const warmTriggerWorkers = async () => {
   ]);
 };
 
+/**
+ * In-memory slot lock — prevents duplicate booking attempts on the SAME
+ * Vercel instance. This is a fast-path optimistic lock only.
+ *
+ * Distributed protection across multiple instances is guaranteed by the
+ * Google Calendar freebusy check in bookCalendarSlotDirect(), which queries
+ * real-time busy intervals immediately before the calendar insert. If two
+ * instances race past the in-memory lock, the second will see the first's
+ * event in the busy intervals and reject with "That slot was just booked."
+ */
 const acquireBookingSlotLock = (slotStartIso) => {
   const key = String(slotStartIso || "").trim();
   if (!key) {
@@ -1624,7 +1634,7 @@ const acquireBookingSlotLock = (slotStartIso) => {
   };
 };
 
-const waitForRunOutput = async (handle, timeoutMs = 45000, pollIntervalMs = 300) => {
+const waitForRunOutput = async (handle, timeoutMs = 30000, pollIntervalMs = 300) => {
   let run = await runs.retrieve(handle);
   const runId = run.id;
   const deadline = Date.now() + timeoutMs;
@@ -1724,7 +1734,14 @@ if (process.env.CORS_ORIGIN) {
     })
   );
 } else {
-  console.warn("[server] CORS_ORIGIN not set — defaulting to localhost only");
+  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  if (isProduction) {
+    console.error(
+      "[server] CRITICAL: CORS_ORIGIN is not set in production. Set CORS_ORIGIN to your domain (e.g. https://midtownpaintinghomeservices.ca). Defaulting to restrictive localhost origins."
+    );
+  } else {
+    console.warn("[server] CORS_ORIGIN not set — defaulting to localhost only");
+  }
   app.use(cors({ origin: ["http://localhost:5173", "http://localhost:8787"] }));
 }
 
@@ -2020,6 +2037,7 @@ app.post("/api/calendar/booking", bookingLimiter, async (req, res, next) => {
     }
 
     try {
+      clearCalendarAvailabilityCache();
       const output = await bookCalendarSlotDirect({
         slotStartIso,
         fullName,
@@ -2144,6 +2162,7 @@ app.post("/api/calendar/manage/reschedule", manageLimiter, async (req, res, next
     }
 
     try {
+      clearCalendarAvailabilityCache();
       const output = await rescheduleManageBookingDirect({
         eventId,
         actor,
@@ -2208,9 +2227,34 @@ app.use((error, _req, res, _next) => {
   });
 });
 
+const logStartupEnvironmentWarnings = () => {
+  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const severity = isProduction ? "error" : "warn";
+
+  if (MISSING_GOOGLE_ENV_VARS.length > 0) {
+    console[severity](
+      `[server] Missing Google Calendar env vars (calendar/booking routes will fail): ${MISSING_GOOGLE_ENV_VARS.join(", ")}`
+    );
+  }
+
+  if (MISSING_SMTP_ENV_VARS.length > 0) {
+    console[severity](
+      `[server] Missing SMTP env vars (email notifications will fail): ${MISSING_SMTP_ENV_VARS.join(", ")}`
+    );
+  }
+
+  const missingTwilioVars = REQUIRED_TWILIO_ENV_VARS.filter((key) => !process.env[key]);
+  if (missingTwilioVars.length > 0) {
+    console.warn(
+      `[server] Missing Twilio env vars (SMS notifications disabled): ${missingTwilioVars.join(", ")}`
+    );
+  }
+};
+
 const startServer = () => {
   app.listen(PORT, async () => {
     console.log(`[server] Midtown backend listening on http://localhost:${PORT}`);
+    logStartupEnvironmentWarnings();
 
     if (MISSING_TRIGGER_ENV_VARS.length > 0) {
       console.warn(

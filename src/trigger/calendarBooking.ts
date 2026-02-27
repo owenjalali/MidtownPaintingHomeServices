@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { logger, queue, task, wait } from "@trigger.dev/sdk";
+import { logger, queue, task } from "@trigger.dev/sdk";
 import { randomBytes } from "node:crypto";
 import { google, type calendar_v3 } from "googleapis";
 import { DateTime } from "luxon";
@@ -1122,7 +1122,10 @@ export const bookingSendReminder = task({
     const now = DateTime.now().setZone(timezone);
 
     if (reminderAt > now) {
-      await wait.until({ date: reminderAt.toJSDate() });
+      logger.info("Reminder time is in the future — this task should have been scheduled with Trigger.dev delay option. Sending immediately as fallback.", {
+        reminderAt: reminderAt.toUTC().toISO(),
+        now: now.toUTC().toISO(),
+      });
     }
 
     const projectSummary = summarizeProject(projectDetails);
