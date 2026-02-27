@@ -105,9 +105,6 @@ h6 {
 .btn-magnetic {
     position: relative;
     overflow: hidden;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
@@ -186,23 +183,8 @@ body {
     border-radius: 4px;
 }
 
-/* Ensure images never overflow containers on mobile */
-img {
-    max-width: 100%;
-    height: auto;
-}
-
-/* Better touch targets on mobile */
+/* Mobile input handling */
 @media (max-width: 640px) {
-    button,
-    a,
-    select,
-    input[type="checkbox"],
-    input[type="radio"] {
-        min-height: 44px;
-        min-width: 44px;
-    }
-
     input[type="text"],
     input[type="email"],
     input[type="tel"],

@@ -75,7 +75,7 @@ const Hero = () => {
                     <button
                         ref={btnRef as any}
                         onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event('open-quote')); }}
-                        className="btn-magnetic bg-primary text-white px-6 py-3.5 sm:px-8 sm:py-4 rounded-full font-body font-semibold text-base sm:text-lg inline-flex"
+                        className="btn-magnetic items-center justify-center bg-primary text-white px-6 py-3.5 sm:px-8 sm:py-4 rounded-full font-body font-semibold text-base sm:text-lg inline-flex"
                     >
                         <span className="bg-layer bg-black rounded-full"></span>
                         <span className="content-layer">Get a free quote</span>

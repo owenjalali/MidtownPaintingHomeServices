@@ -15,7 +15,7 @@ const Footer = () => {
 
                 <button
                     onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event('open-quote')); }}
-                    className="btn-magnetic bg-primary text-white px-8 py-4 sm:px-10 sm:py-5 rounded-full font-body font-semibold text-lg sm:text-xl inline-flex shadow-[0_0_40px_rgba(234,88,12,0.3)]"
+                    className="btn-magnetic items-center justify-center bg-primary text-white px-8 py-4 sm:px-10 sm:py-5 rounded-full font-body font-semibold text-lg sm:text-xl inline-flex shadow-[0_0_40px_rgba(234,88,12,0.3)]"
                 >
                     <span className="bg-layer bg-white rounded-full"></span>
                     <span className="content-layer group-hover:text-primary">Get a free quote</span>

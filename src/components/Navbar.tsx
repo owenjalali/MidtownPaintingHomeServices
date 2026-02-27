@@ -41,7 +41,7 @@ const Navbar = () => {
                     <img
                         src="/images/logo-midtown.png"
                         alt="Midtown Painting Home Services"
-                        className="h-[3.25rem] md:h-14 w-auto object-contain drop-shadow-md"
+                        className="h-[4.5rem] md:h-[7.5rem] w-auto object-contain drop-shadow-md"
                         loading="eager"
                         decoding="async"
                         fetchPriority="high"
@@ -62,7 +62,7 @@ const Navbar = () => {
                 <div className="flex items-center gap-4 relative z-50">
                     <button
                         onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event('open-quote')); }}
-                        className="btn-magnetic px-5 py-2.5 md:px-6 md:py-3 rounded-full text-sm font-semibold border border-current hover:border-transparent group hidden sm:inline-flex"
+                        className="btn-magnetic items-center justify-center px-5 py-2.5 md:px-6 md:py-3 rounded-full text-sm font-semibold border border-current hover:border-transparent group hidden sm:inline-flex"
                     >
                         <span className="bg-layer rounded-full"></span>
                         <span className={`content-layer transition-colors duration-300 ${isScrolled || isPartnerships || isMobileMenuOpen ? 'text-black group-hover:text-white' : 'text-white'}`}>

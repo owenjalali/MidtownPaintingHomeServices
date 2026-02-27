@@ -10,12 +10,12 @@ const Partnerships = () => {
     return (
         <>
             <section className="pt-32 pb-24 md:pt-48 md:pb-32 bg-background min-h-screen">
-                <div className="max-w-4xl mx-auto px-6 lg:px-12 flex flex-col gap-16">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 flex flex-col gap-16">
                     <div className="text-center">
                         <span className="font-data text-primary text-sm uppercase tracking-widest font-bold">
                             Credentials & Quality
                         </span>
-                        <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold mt-4 leading-[1.1] text-foreground">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-bold mt-4 leading-[1.1] text-foreground">
                             Partnerships & Certifications
                         </h1>
                         <p className="mt-6 text-lg font-body text-gray-600 max-w-2xl mx-auto">
