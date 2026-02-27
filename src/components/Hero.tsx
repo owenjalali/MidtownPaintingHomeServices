@@ -36,7 +36,7 @@ const Hero = () => {
     return (
         <section
             ref={containerRef}
-            className="relative w-full h-[100dvh] flex flex-col justify-end overflow-hidden pb-10 sm:pb-16 md:pb-24"
+            className="relative w-full h-[100svh] sm:h-[100dvh] flex flex-col justify-end overflow-hidden pb-10 sm:pb-16 md:pb-24"
         >
             {/* Background Image Setup */}
             <img

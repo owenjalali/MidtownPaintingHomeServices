@@ -84,7 +84,7 @@ const Protocol = () => {
             {protocols.map((p, i) => (
                 <div
                     key={i}
-                    className={`protocol-card sticky top-0 h-[100dvh] w-full flex flex-col justify-center items-center px-4 sm:px-6 ${p.color} ${p.textMode} rounded-b-[2rem] sm:rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] origin-top z-[${10 + i}] border-b border-black/10 overflow-hidden relative`}
+                    className={`protocol-card sticky top-0 h-[100svh] sm:h-[100dvh] w-full flex flex-col justify-center items-center px-4 sm:px-6 ${p.color} ${p.textMode} rounded-b-[2rem] sm:rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] origin-top z-[${10 + i}] border-b border-black/10 overflow-hidden relative`}
                 >
                     {/* Background Image heavily dimmed to strictly serve as texture */}
                     <LazyImage

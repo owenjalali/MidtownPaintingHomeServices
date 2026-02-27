@@ -7,7 +7,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const FeatureImage = ({ imagePath, alt }: { imagePath: string; alt: string }) => {
     return (
-        <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-gray-200">
+        <div className="relative h-56 sm:h-64 md:h-48 w-full rounded-2xl overflow-hidden bg-gray-200">
             <LazyImage
                 src={imagePath}
                 alt={alt}
