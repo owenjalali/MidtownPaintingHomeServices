@@ -42,7 +42,7 @@ const Hero = () => {
             <img
                 src="/images/hero-new.jpg"
                 alt="Beautifully finished Midtown Painting project"
-                className="absolute inset-0 z-0 h-full w-full object-cover"
+                className="absolute inset-0 z-0 h-full w-full object-cover transform-gpu [backface-visibility:hidden] [will-change:transform]"
                 loading="eager"
                 decoding="async"
                 fetchPriority="high"

@@ -34,7 +34,7 @@ const About = () => {
                         <img
                             src="/images/carter.png"
                             alt="Carter Jenkins - Owner of Midtown Painting"
-                            className="absolute inset-0 w-full h-full object-cover grayscale contrast-[1.1]"
+                            className="absolute inset-0 w-full h-full object-cover grayscale contrast-[1.1] transform-gpu [backface-visibility:hidden] [will-change:transform]"
                             loading="lazy"
                             decoding="async"
                             sizes="(min-width: 768px) 38vw, 92vw"

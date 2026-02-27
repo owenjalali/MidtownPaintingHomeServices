@@ -65,8 +65,8 @@ const Philosophy = () => {
             <LazyImage
                 src="/images/rotting-wood.jpg"
                 alt="Subtle wood grain texture"
-                containerClassName="absolute inset-0 z-0"
-                className="h-full w-full object-cover opacity-[0.03] mix-blend-overlay grayscale"
+                containerClassName="absolute inset-0 z-0 transform-gpu"
+                className="h-full w-full object-cover opacity-[0.03] mix-blend-overlay grayscale transform-gpu [backface-visibility:hidden]"
                 sizes="100vw"
             />
 

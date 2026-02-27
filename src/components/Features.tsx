@@ -11,8 +11,8 @@ const FeatureImage = ({ imagePath, alt }: { imagePath: string; alt: string }) =>
             <LazyImage
                 src={imagePath}
                 alt={alt}
-                containerClassName="absolute inset-0"
-                className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105"
+                containerClassName="absolute inset-0 transform-gpu"
+                className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105 transform-gpu [backface-visibility:hidden] [will-change:transform]"
                 sizes="(min-width: 768px) 30vw, 90vw"
             />
             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-500" />

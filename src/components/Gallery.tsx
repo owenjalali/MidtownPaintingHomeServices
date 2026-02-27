@@ -138,8 +138,8 @@ const Gallery = () => {
                             <LazyImage
                                 src={img.src}
                                 alt={img.alt}
-                                containerClassName="absolute inset-0"
-                                className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105"
+                                containerClassName="absolute inset-0 transform-gpu"
+                                className="h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105 transform-gpu [backface-visibility:hidden] [will-change:transform]"
                                 sizes="(min-width: 768px) 25vw, 50vw"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-500 flex items-center justify-center">
@@ -178,7 +178,7 @@ const Gallery = () => {
                         <img
                             src={activeImages[currentImageIndex].src}
                             alt={activeImages[currentImageIndex].alt}
-                            className="max-w-full max-h-full object-contain drop-shadow-2xl select-none"
+                            className="max-w-full max-h-full object-contain drop-shadow-2xl select-none transform-gpu [backface-visibility:hidden]"
                             loading="eager"
                             decoding="async"
                             onClick={(e) => e.stopPropagation()}

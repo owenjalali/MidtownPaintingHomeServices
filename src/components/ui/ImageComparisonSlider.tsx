@@ -87,19 +87,19 @@ const ImageComparisonSlider: React.FC<ImageComparisonSliderProps> = ({
             <img
                 src={afterImage}
                 alt={afterAlt}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover transform-gpu [backface-visibility:hidden]"
                 draggable={false}
             />
 
             {/* Before Image (Clipped) */}
             <div
-                className="absolute inset-0 overflow-hidden"
+                className="absolute inset-0 overflow-hidden transform-gpu [will-change:clip-path]"
                 style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
             >
                 <img
                     src={beforeImage}
                     alt={beforeAlt}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover transform-gpu [backface-visibility:hidden]"
                     draggable={false}
                 />
             </div>

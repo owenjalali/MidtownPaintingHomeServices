@@ -62,8 +62,8 @@ const Protocol = () => {
                 if (nextCard) {
                     gsap.to(card, {
                         scale: 0.9,
-                        opacity: 0.4,
-                        filter: "blur(10px)",
+                        opacity: 0.2,
+                        // filter: "blur(10px)", // Removed: Causes severe rendering lag in Safari
                         ease: "none",
                         scrollTrigger: {
                             trigger: nextCard,
@@ -90,8 +90,8 @@ const Protocol = () => {
                     <LazyImage
                         src={p.image}
                         alt={`${p.title} background texture`}
-                        containerClassName="absolute inset-0 z-0"
-                        className="h-full w-full object-cover transition-transform duration-[10s] ease-out scale-105 opacity-20"
+                        containerClassName="absolute inset-0 z-0 transform-gpu"
+                        className="h-full w-full object-cover transition-transform duration-[10s] ease-out scale-105 opacity-20 transform-gpu [backface-visibility:hidden] [will-change:transform]"
                         sizes="100vw"
                     />
 
