@@ -192,7 +192,21 @@ const ManageBooking = () => {
 
       try {
         const month = getMonthParam(monthDate);
-        const response = await fetchWithTimeout(`/api/calendar/availability?month=${month}`, undefined, 45000);
+        if (!credentials) {
+          throw new Error("This booking link is missing required details.");
+        }
+
+        const params = new URLSearchParams({
+          eventId: credentials.eventId,
+          actor: credentials.actor,
+          token: credentials.token,
+          month,
+        });
+        const response = await fetchWithTimeout(
+          `/api/calendar/manage/availability?${params.toString()}`,
+          undefined,
+          45000
+        );
 
         let responseBody: AvailabilityResponse | { message?: string } = {
           availabilityByDate: {},
@@ -246,7 +260,7 @@ const ManageBooking = () => {
         setIsLoadingAvailability(false);
       }
     },
-    [selectedDate]
+    [credentials, selectedDate]
   );
 
   useEffect(() => {
@@ -403,7 +417,7 @@ const ManageBooking = () => {
 
         {!credentials && (
           <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            This booking link is missing required details. Open the original link from your email again.
+            This booking link is missing required details. Open the original link again.
           </div>
         )}
 

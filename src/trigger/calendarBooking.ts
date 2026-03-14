@@ -250,6 +250,26 @@ const MANAGE_CLIENT_EMAIL_KEY = "mp_client_email";
 const MANAGE_CLIENT_PHONE_KEY = "mp_client_phone";
 const MANAGE_REASON_MAX_LENGTH = 500;
 const DEFAULT_SELF_SERVICE_CUTOFF_MINUTES = 12 * 60;
+const REMINDER_RUN_TTL_BUFFER_SECONDS = 24 * 60 * 60;
+const MIN_REMINDER_RUN_TTL_SECONDS = 15 * 60;
+type TriggerMachinePreset =
+  | "micro"
+  | "small-1x"
+  | "small-2x"
+  | "medium-1x"
+  | "medium-2x"
+  | "large-1x"
+  | "large-2x";
+const DEFAULT_NOTIFICATION_TASK_MACHINE: TriggerMachinePreset = "medium-1x";
+const TRIGGER_MACHINE_PRESETS = new Set<TriggerMachinePreset>([
+  "micro",
+  "small-1x",
+  "small-2x",
+  "medium-1x",
+  "medium-2x",
+  "large-1x",
+  "large-2x",
+]);
 
 const parseBoolean = (value: string | undefined, fallback: boolean) => {
   if (typeof value !== "string") {
@@ -265,6 +285,103 @@ const parseBoolean = (value: string | undefined, fallback: boolean) => {
   }
 
   return fallback;
+};
+
+const parseDurationToSeconds = (value: string | number | undefined): number | null => {
+  if (typeof value === "number") {
+    if (Number.isFinite(value) && value > 0) {
+      return Math.floor(value);
+    }
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null;
+  }
+
+  const unitToSeconds: Record<string, number> = {
+    s: 1,
+    m: 60,
+    h: 60 * 60,
+    hr: 60 * 60,
+    d: 24 * 60 * 60,
+    w: 7 * 24 * 60 * 60,
+  };
+
+  let totalSeconds = 0;
+  const tokenPattern = /(\d+)\s*(w|d|h|hr|m|s)/g;
+  let tokenMatch = tokenPattern.exec(normalized);
+  while (tokenMatch) {
+    const amount = Number(tokenMatch[1]);
+    const unit = tokenMatch[2];
+    const multiplier = unitToSeconds[unit];
+    if (!Number.isFinite(amount) || amount < 0 || !multiplier) {
+      return null;
+    }
+    totalSeconds += amount * multiplier;
+    tokenMatch = tokenPattern.exec(normalized);
+  }
+
+  const remainder = normalized.replace(tokenPattern, "").replace(/\s+/g, "");
+  if (remainder.length > 0) {
+    return null;
+  }
+
+  return totalSeconds > 0 ? totalSeconds : null;
+};
+
+const getReminderRunTtl = (reminderAt: DateTime, nowInBookingTimezone: DateTime): string => {
+  const configuredTtl = String(process.env.BOOKING_REMINDER_RUN_TTL || "").trim();
+  const secondsUntilReminder = Math.max(
+    0,
+    Math.ceil(reminderAt.diff(nowInBookingTimezone, "seconds").seconds || 0)
+  );
+  const minimumSafeTtlSeconds = Math.max(
+    MIN_REMINDER_RUN_TTL_SECONDS,
+    secondsUntilReminder + REMINDER_RUN_TTL_BUFFER_SECONDS
+  );
+
+  if (!configuredTtl) {
+    return `${minimumSafeTtlSeconds}s`;
+  }
+
+  const configuredTtlSeconds = parseDurationToSeconds(configuredTtl);
+  if (configuredTtlSeconds && configuredTtlSeconds < minimumSafeTtlSeconds) {
+    logger.warn("Overriding BOOKING_REMINDER_RUN_TTL because it is too short for this delay", {
+      configuredTtl,
+      configuredTtlSeconds,
+      minimumSafeTtlSeconds,
+      secondsUntilReminder,
+    });
+    return `${minimumSafeTtlSeconds}s`;
+  }
+
+  return configuredTtl;
+};
+
+const getNotificationTaskMachine = (): TriggerMachinePreset => {
+  const configured = String(process.env.BOOKING_NOTIFICATION_MACHINE || "").trim().toLowerCase();
+  if (!configured) {
+    return DEFAULT_NOTIFICATION_TASK_MACHINE;
+  }
+  if (TRIGGER_MACHINE_PRESETS.has(configured as TriggerMachinePreset)) {
+    return configured as TriggerMachinePreset;
+  }
+  logger.warn("Invalid BOOKING_NOTIFICATION_MACHINE value, falling back to default", {
+    configured,
+    fallback: DEFAULT_NOTIFICATION_TASK_MACHINE,
+  });
+  return DEFAULT_NOTIFICATION_TASK_MACHINE;
 };
 
 const parsePositiveInteger = (value: string | undefined, fallback: number) => {
@@ -785,23 +902,22 @@ const sendManageNotifications = async (options: ManageNotificationPayload) => {
         "Midtown Painting Home Services",
       ].join("\n");
 
-      await Promise.all([
-        transporter.sendMail({
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: options.ownerEmail,
+        replyTo: options.clientEmail || undefined,
+        subject: ownerSubject,
+        text: ownerLines,
+      });
+
+      if (options.clientEmail) {
+        await transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
-          to: options.ownerEmail,
-          replyTo: options.clientEmail || undefined,
-          subject: ownerSubject,
-          text: ownerLines,
-        }),
-        options.clientEmail
-          ? transporter.sendMail({
-              from: process.env.SMTP_FROM || process.env.SMTP_USER,
-              to: options.clientEmail,
-              subject: customerSubject,
-              text: customerLines,
-            })
-          : Promise.resolve(),
-      ]);
+          to: options.clientEmail,
+          subject: customerSubject,
+          text: customerLines,
+        });
+      }
 
       emailSent = true;
     } catch (error) {
@@ -1082,6 +1198,7 @@ export const calendarGetAvailability = task({
 
 export const bookingSendReminder = task({
   id: "booking-send-reminder",
+  machine: "medium-1x",
   run: async (payload: ReminderPayload) => {
     const {
       bookingStartIso = "",
@@ -1174,20 +1291,19 @@ export const bookingSendReminder = task({
         "If you need to reschedule, reply to this email.",
       ].join("\n");
 
-      await Promise.all([
-        transporter.sendMail({
-          from: process.env.SMTP_FROM || process.env.SMTP_USER,
-          to: ownerEmail,
-          subject: emailSubject,
-          text: ownerReminderLines,
-        }),
-        transporter.sendMail({
-          from: process.env.SMTP_FROM || process.env.SMTP_USER,
-          to: clientEmail,
-          subject: emailSubject,
-          text: clientReminderLines,
-        }),
-      ]);
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: ownerEmail,
+        subject: emailSubject,
+        text: ownerReminderLines,
+      });
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: clientEmail,
+        subject: emailSubject,
+        text: clientReminderLines,
+      });
     }
 
     const shouldSendSms = Boolean(sendSms);
@@ -1295,6 +1411,7 @@ export const bookingSendReminder = task({
 export const bookingSendConfirmationEmail = task({
   id: "booking-send-confirmation-email",
   queue: bookingNotificationQueue,
+  machine: "medium-1x",
   run: async (payload: BookingConfirmationPayload) => {
     const missingSmtpEnvVars = getMissingEnvVars(SMTP_REQUIRED_ENV_VARS);
     if (missingSmtpEnvVars.length > 0) {
@@ -1316,23 +1433,22 @@ export const bookingSendConfirmationEmail = task({
     }
 
     const transporter = createSmtpTransporter();
-    await Promise.all([
-      transporter.sendMail({
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: ownerEmail,
+      replyTo: replyTo || undefined,
+      subject: ownerSubject,
+      text: ownerText,
+    });
+
+    if (clientEmail) {
+      await transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: ownerEmail,
-        replyTo: replyTo || undefined,
-        subject: ownerSubject,
-        text: ownerText,
-      }),
-      clientEmail
-        ? transporter.sendMail({
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
-            to: clientEmail,
-            subject: clientSubject,
-            text: clientText,
-          })
-        : Promise.resolve(),
-    ]);
+        to: clientEmail,
+        subject: clientSubject,
+        text: clientText,
+      });
+    }
 
     logger.info("Booking confirmation emails sent", {
       ownerEmail,
@@ -1350,6 +1466,7 @@ export const bookingSendConfirmationEmail = task({
 export const bookingSendManageNotifications = task({
   id: "booking-send-manage-notifications",
   queue: bookingNotificationQueue,
+  machine: "medium-1x",
   run: async (payload: ManageNotificationPayload) => sendManageNotifications(payload),
 });
 
@@ -1619,6 +1736,7 @@ export const calendarBookSlot = task({
         },
         {
           ttl: process.env.BOOKING_CONFIRMATION_EMAIL_TTL || "2h",
+          machine: getNotificationTaskMachine(),
         }
       );
       logger.info("Queued booking confirmation email task", {
@@ -1632,10 +1750,10 @@ export const calendarBookSlot = task({
       });
     }
 
-    const reminderRunTtl = process.env.BOOKING_REMINDER_RUN_TTL || "24h";
     const bookingStartIsoUtc = slotStart.toUTC().toISO() as string;
     const ownerPhone = process.env.BOOKING_OWNER_PHONE || "";
     const nowInBookingTimezone = DateTime.now().setZone(settings.timezone);
+    const notificationTaskMachine = getNotificationTaskMachine();
     const reminderSchedules: BookingResult["reminders"] = [];
     const reminderConfigs = [
       {
@@ -1672,13 +1790,17 @@ export const calendarBookSlot = task({
         }
 
         const reminderAt = slotStart.minus({ minutes: reminderConfig.reminderMinutesBefore });
-        const triggerOptions: { delay?: Date; ttl: string } = {
+        const reminderRunTtl = getReminderRunTtl(reminderAt, nowInBookingTimezone);
+        const triggerOptions: { delay?: Date; ttl: string; machine?: TriggerMachinePreset } = {
           ttl: reminderRunTtl,
         };
         const delayApplied = reminderAt > nowInBookingTimezone;
 
         if (delayApplied) {
           triggerOptions.delay = reminderAt.toJSDate();
+        }
+        if (reminderConfig.sendEmail) {
+          triggerOptions.machine = notificationTaskMachine;
         }
 
         const reminderHandle = await bookingSendReminder.trigger(
@@ -1872,6 +1994,7 @@ export const calendarManageCancel = task({
       try {
         const notificationsHandle = await bookingSendManageNotifications.trigger(notificationPayload, {
           ttl: process.env.BOOKING_MANAGE_NOTIFICATIONS_TTL || "2h",
+          machine: getNotificationTaskMachine(),
         });
         logger.info("Queued manage-booking notifications task", {
           runId: getRunIdFromHandle(notificationsHandle),
@@ -2076,6 +2199,7 @@ export const calendarManageReschedule = task({
       try {
         const notificationsHandle = await bookingSendManageNotifications.trigger(notificationPayload, {
           ttl: process.env.BOOKING_MANAGE_NOTIFICATIONS_TTL || "2h",
+          machine: getNotificationTaskMachine(),
         });
         logger.info("Queued manage-booking notifications task", {
           runId: getRunIdFromHandle(notificationsHandle),

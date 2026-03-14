@@ -6,6 +6,15 @@ const REQUEST_TIMEOUT_MS = Number(process.env.SMOKE_REQUEST_TIMEOUT_MS || 20000)
 const MAX_HEALTH_WAIT_MS = Number(process.env.SMOKE_MAX_HEALTH_WAIT_MS || 120000);
 const HEALTH_POLL_MS = Number(process.env.SMOKE_HEALTH_POLL_MS || 1500);
 const MAX_AVAILABILITY_WAIT_MS = Number(process.env.SMOKE_MAX_AVAILABILITY_WAIT_MS || 180000);
+const SMOKE_CUSTOMER_PHONE = String(
+  process.env.SMOKE_CUSTOMER_PHONE || process.env.BOOKING_OWNER_PHONE || ""
+).trim();
+const SMOKE_CUSTOMER_EMAIL = String(
+  process.env.SMOKE_CUSTOMER_EMAIL ||
+    process.env.BOOKING_OWNER_EMAIL ||
+    process.env.QUOTE_TO_EMAIL ||
+    ""
+).trim();
 
 const monthParamFromDate = (date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -163,13 +172,21 @@ const main = async () => {
   pushAssertion("found two live availability slots");
 
   const smokeId = Date.now();
+  assert.ok(
+    SMOKE_CUSTOMER_PHONE,
+    "Set SMOKE_CUSTOMER_PHONE or BOOKING_OWNER_PHONE before running the manage booking smoke script."
+  );
+  assert.ok(
+    SMOKE_CUSTOMER_EMAIL,
+    "Set SMOKE_CUSTOMER_EMAIL, BOOKING_OWNER_EMAIL, or QUOTE_TO_EMAIL before running the manage booking smoke script."
+  );
   const bookingPayload = {
     slotStartIso: primarySlot.startIso,
     fullName: `Smoke Test ${smokeId}`,
-    phone: "+16475108718",
+    phone: SMOKE_CUSTOMER_PHONE,
     phoneCountryCode: "+1",
-    phoneNationalNumber: "6475108718",
-    email: `owenjalali70+smoke${smokeId}@gmail.com`,
+    phoneNationalNumber: SMOKE_CUSTOMER_PHONE.replace(/\D/g, "").replace(/^1/, ""),
+    email: SMOKE_CUSTOMER_EMAIL,
     addressLine1: "123 Smoke Test Ave",
     city: "Toronto",
     postalCode: "M5V2T6",

@@ -76,9 +76,26 @@ const COUNTRY_OPTIONS = [
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 const REPEATING_DIGIT_PATTERN = /^(\d)\1{6,}$/;
 const REPEATING_BLOCK_PATTERN = /^(\d{2,4})\1{2,}$/;
+const DEFAULT_CALENDAR_TIMEZONE = 'America/Toronto';
 
 const createMonthDate = (year: number, month: number) => new Date(year, month, 1);
-const getCurrentMonthDate = () => {
+const getCurrentMonthDate = (timeZone = DEFAULT_CALENDAR_TIMEZONE) => {
+    try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone,
+            year: 'numeric',
+            month: 'numeric'
+        });
+        const parts = formatter.formatToParts(new Date());
+        const year = Number(parts.find((part) => part.type === 'year')?.value);
+        const month = Number(parts.find((part) => part.type === 'month')?.value);
+        if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+            return createMonthDate(year, month - 1);
+        }
+    } catch {
+        // Fallback below.
+    }
+
     const now = new Date();
     return createMonthDate(now.getFullYear(), now.getMonth());
 };
@@ -257,9 +274,9 @@ const QuoteModal = () => {
     const [budget, setBudget] = useState(500);
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [currentMonth, setCurrentMonth] = useState<Date>(() => getCurrentMonthDate());
+    const [currentMonth, setCurrentMonth] = useState<Date>(() => getCurrentMonthDate(DEFAULT_CALENDAR_TIMEZONE));
     const [availabilityByDate, setAvailabilityByDate] = useState<Record<string, CalendarSlot[]>>({});
-    const [calendarTimezone, setCalendarTimezone] = useState('America/Toronto');
+    const [calendarTimezone, setCalendarTimezone] = useState(DEFAULT_CALENDAR_TIMEZONE);
     const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
     const [availabilityError, setAvailabilityError] = useState('');
     const [isBooking, setIsBooking] = useState(false);
@@ -282,9 +299,9 @@ const QuoteModal = () => {
         setBudget(500);
         setSelectedTime(null);
         setSelectedDate(null);
-        setCurrentMonth(getCurrentMonthDate());
+        setCurrentMonth(getCurrentMonthDate(DEFAULT_CALENDAR_TIMEZONE));
         setAvailabilityByDate({});
-        setCalendarTimezone('America/Toronto');
+        setCalendarTimezone(DEFAULT_CALENDAR_TIMEZONE);
         setIsLoadingAvailability(false);
         setAvailabilityError('');
         setIsBooking(false);
@@ -335,6 +352,7 @@ const QuoteModal = () => {
     };
 
     const transitionToCalendar = () => {
+        setCurrentMonth(getCurrentMonthDate(DEFAULT_CALENDAR_TIMEZONE));
         setBookingError('');
         setAvailabilityError('');
         setConfirmedBooking(null);

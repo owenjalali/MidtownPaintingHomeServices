@@ -3,11 +3,31 @@ import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import multer from "multer";
+import nodemailer from "nodemailer";
 import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { runs, tasks } from "@trigger.dev/sdk";
 import { google } from "googleapis";
 import { DateTime } from "luxon";
+import {
+  createFieldLeadService,
+  getFieldLeadRuntimeConfig,
+  isFieldLeadPrivateProps,
+} from "./fieldLeadService.mjs";
+import {
+  getFieldLeadGoogleConfig,
+  getFieldLeadOwnerEmail,
+  getFieldLeadOwnerPhone,
+  getMissingFieldLeadGoogleEnvVars,
+} from "./fieldLeadEnv.mjs";
+import {
+  getFieldLeadRow,
+  getFieldLeadRowByBookedEventId,
+  updateFieldLeadRowByNumber,
+} from "./fieldLeadStore.mjs";
+import { registerFieldLeadRoutes } from "./fieldLeadRoutes.mjs";
+import { sendFieldLeadManageNotificationsDirect } from "./fieldLeadNotifications.mjs";
+import { syncFieldLeadRowPatch } from "./fieldLeadCrmSync.mjs";
 
 const app = express();
 
@@ -21,6 +41,10 @@ const REPEATING_DIGIT_PATTERN = /^(\d)\1{6,}$/;
 const REPEATING_BLOCK_PATTERN = /^(\d{2,4})\1{2,}$/;
 const REQUIRED_TRIGGER_ENV_VARS = ["TRIGGER_SECRET_KEY"];
 const REQUIRED_SMTP_ENV_VARS = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "QUOTE_TO_EMAIL"];
+const TRIGGER_SECRET_KEY_DEV_PREFIX = "tr_dev_";
+const GENERIC_TEMPORARY_FAILURE_MESSAGE = "Unable to process your request right now. Please try again.";
+const GENERIC_ORCHESTRATION_FAILURE_MESSAGE =
+  "We're having trouble processing this request right now. Please try again in a moment.";
 const REQUIRED_TWILIO_ENV_VARS = ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"];
 const REQUIRED_GOOGLE_ENV_VARS = [
   "GOOGLE_CLIENT_ID",
@@ -83,10 +107,23 @@ const BOOKING_SLOT_LOCK_TTL_MS =
   Number.isFinite(parsedBookingSlotLockTtlMs) && parsedBookingSlotLockTtlMs > 0
     ? Math.floor(parsedBookingSlotLockTtlMs)
     : DEFAULT_BOOKING_SLOT_LOCK_TTL_MS;
+const REMINDER_RUN_TTL_BUFFER_SECONDS = 24 * 60 * 60;
+const MIN_REMINDER_RUN_TTL_SECONDS = 15 * 60;
+const DEFAULT_NOTIFICATION_TASK_MACHINE = "medium-1x";
+const TRIGGER_MACHINE_PRESETS = new Set([
+  "micro",
+  "small-1x",
+  "small-2x",
+  "medium-1x",
+  "medium-2x",
+  "large-1x",
+  "large-2x",
+]);
 const calendarAvailabilityCache = new Map();
 const calendarAvailabilityInFlight = new Map();
 const manageContextCache = new Map();
 const bookingSlotLocks = new Map();
+const fieldLeadService = createFieldLeadService();
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -108,6 +145,41 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const normalizeText = (value) => String(value ?? "").trim();
 const normalizeDigits = (value) => normalizeText(value).replace(/\D/g, "");
 const normalizeCountry = (country) => normalizeText(country).toUpperCase();
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+const isProductionRuntime = () => process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+const getTriggerSecretScope = () => {
+  const secret = normalizeText(process.env.TRIGGER_SECRET_KEY);
+  if (!secret) {
+    return "missing";
+  }
+  if (secret.startsWith("tr_prod_")) {
+    return "prod";
+  }
+  if (secret.startsWith(TRIGGER_SECRET_KEY_DEV_PREFIX)) {
+    return "dev";
+  }
+  return "unknown";
+};
+const getQuoteDispatchMode = () => {
+  const configured = normalizeText(process.env.QUOTE_DISPATCH_MODE).toLowerCase();
+  if (configured === "trigger") {
+    return "trigger-worker";
+  }
+  if (configured === "smtp-direct") {
+    return "smtp-direct";
+  }
+  if (isProductionRuntime()) {
+    return "smtp-direct";
+  }
+  return "trigger-worker";
+};
+const shouldUseDirectQuoteDispatch = () => getQuoteDispatchMode() === "smtp-direct";
 const PROJECT_TYPE_LABELS = Object.freeze({
   interior: "Interior Painting",
   exterior: "Exterior Painting",
@@ -262,6 +334,103 @@ const parseBoolean = (value, fallback) => {
   return fallback;
 };
 
+const parseDurationToSeconds = (value) => {
+  if (typeof value === "number") {
+    if (Number.isFinite(value) && value > 0) {
+      return Math.floor(value);
+    }
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null;
+  }
+
+  const unitToSeconds = {
+    s: 1,
+    m: 60,
+    h: 60 * 60,
+    hr: 60 * 60,
+    d: 24 * 60 * 60,
+    w: 7 * 24 * 60 * 60,
+  };
+
+  let totalSeconds = 0;
+  const tokenPattern = /(\d+)\s*(w|d|h|hr|m|s)/g;
+  let tokenMatch = tokenPattern.exec(normalized);
+  while (tokenMatch) {
+    const amount = Number(tokenMatch[1]);
+    const unit = tokenMatch[2];
+    const multiplier = unitToSeconds[unit];
+    if (!Number.isFinite(amount) || amount < 0 || !multiplier) {
+      return null;
+    }
+    totalSeconds += amount * multiplier;
+    tokenMatch = tokenPattern.exec(normalized);
+  }
+
+  const remainder = normalized.replace(tokenPattern, "").replace(/\s+/g, "");
+  if (remainder.length > 0) {
+    return null;
+  }
+
+  return totalSeconds > 0 ? totalSeconds : null;
+};
+
+const getReminderRunTtl = (reminderAt, nowInBookingTimezone) => {
+  const configuredTtl = normalizeText(process.env.BOOKING_REMINDER_RUN_TTL);
+  const secondsUntilReminder = Math.max(
+    0,
+    Math.ceil(reminderAt.diff(nowInBookingTimezone, "seconds").seconds || 0)
+  );
+  const minimumSafeTtlSeconds = Math.max(
+    MIN_REMINDER_RUN_TTL_SECONDS,
+    secondsUntilReminder + REMINDER_RUN_TTL_BUFFER_SECONDS
+  );
+
+  if (!configuredTtl) {
+    return `${minimumSafeTtlSeconds}s`;
+  }
+
+  const configuredTtlSeconds = parseDurationToSeconds(configuredTtl);
+  if (configuredTtlSeconds && configuredTtlSeconds < minimumSafeTtlSeconds) {
+    console.warn("[server] overriding BOOKING_REMINDER_RUN_TTL because it is too short for this delay", {
+      configuredTtl,
+      configuredTtlSeconds,
+      minimumSafeTtlSeconds,
+      secondsUntilReminder,
+    });
+    return `${minimumSafeTtlSeconds}s`;
+  }
+
+  return configuredTtl;
+};
+
+const getNotificationTaskMachine = () => {
+  const configured = normalizeText(process.env.BOOKING_NOTIFICATION_MACHINE).toLowerCase();
+  if (!configured) {
+    return DEFAULT_NOTIFICATION_TASK_MACHINE;
+  }
+  if (TRIGGER_MACHINE_PRESETS.has(configured)) {
+    return configured;
+  }
+  console.warn("[server] invalid BOOKING_NOTIFICATION_MACHINE value, falling back to default", {
+    configured,
+    fallback: DEFAULT_NOTIFICATION_TASK_MACHINE,
+  });
+  return DEFAULT_NOTIFICATION_TASK_MACHINE;
+};
+
 const formatBudgetLabel = (budget) => {
   const numericBudget = Number(budget);
   if (!budget || Number.isNaN(numericBudget) || numericBudget <= 0) {
@@ -335,6 +504,123 @@ const getRunIdFromHandle = (handle) => {
   }
   const maybeRunId = handle.id;
   return typeof maybeRunId === "string" && maybeRunId ? maybeRunId : null;
+};
+
+const buildQuoteEmailPayloadContent = (payload) => {
+  const submittedAtIso = payload.submittedAtIso || new Date().toISOString();
+  const normalizedBudget = formatBudgetLabel(payload.budget);
+  const images = Array.isArray(payload.images) ? payload.images : [];
+
+  const textLines = [
+    "New quote request from Midtown Painting Home Services website",
+    `Submitted at: ${submittedAtIso}`,
+    "",
+    `Full name: ${payload.fullName}`,
+    `Phone: ${payload.phone}`,
+    `Email: ${payload.email}`,
+    `Address: ${payload.addressLine1}`,
+    `City: ${payload.city}`,
+    `Province/State: ${payload.provinceState}`,
+    `Postal/ZIP: ${payload.postalCode}`,
+    `Country: ${payload.country}`,
+    `Project type: ${payload.projectType}`,
+    `Project details: ${payload.projectDetails}`,
+    `Budget expectation: ${normalizedBudget}`,
+    `Call goal: ${payload.callGoal || "Not provided"}`,
+    `Uploaded images: ${images.length} file(s)`,
+  ];
+
+  const htmlRows = [
+    ["Submitted at", submittedAtIso],
+    ["Full name", payload.fullName],
+    ["Phone", payload.phone],
+    ["Email", payload.email],
+    ["Address", payload.addressLine1],
+    ["City", payload.city],
+    ["Province/State", payload.provinceState],
+    ["Postal/ZIP", payload.postalCode],
+    ["Country", payload.country],
+    ["Project type", payload.projectType],
+    ["Project details", payload.projectDetails],
+    ["Budget expectation", normalizedBudget],
+    ["Call goal", payload.callGoal || "Not provided"],
+    ["Uploaded images", `${images.length} file(s)`],
+  ].map(
+    ([label, value]) =>
+      `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:600;">${escapeHtml(
+        label
+      )}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;">${escapeHtml(value)}</td></tr>`
+  );
+
+  const attachments = images.map((image, index) => ({
+    filename: normalizeText(image?.filename || `image-${index + 1}`).replace(/[^\w.\-() ]+/g, "_"),
+    content: Buffer.from(String(image?.contentBase64 || ""), "base64"),
+    contentType: normalizeText(image?.contentType) || "application/octet-stream",
+  }));
+
+  return {
+    submittedAtIso,
+    text: textLines.join("\n"),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827;">
+        <h2 style="margin:0 0 16px;">New Quote Request</h2>
+        <p style="margin:0 0 16px;">A new request was submitted from the Midtown Painting Home Services form.</p>
+        <table style="border-collapse:collapse;width:100%;max-width:760px;">
+          ${htmlRows.join("")}
+        </table>
+      </div>
+    `,
+    attachments,
+  };
+};
+
+const sendQuoteEmailDirect = async (payload) => {
+  if (MISSING_SMTP_ENV_VARS.length > 0) {
+    throw new Error(`Missing required SMTP env vars: ${MISSING_SMTP_ENV_VARS.join(", ")}`);
+  }
+
+  const smtpPort = Number(process.env.SMTP_PORT ?? 587);
+  const smtpSecure = process.env.SMTP_SECURE === "true" || smtpPort === 465;
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  const message = buildQuoteEmailPayloadContent(payload);
+  return transporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: process.env.QUOTE_TO_EMAIL,
+    replyTo: payload.email,
+    subject: `New Quote Request - Midtown Painting Home Services - ${payload.fullName}`,
+    text: message.text,
+    html: message.html,
+    attachments: message.attachments,
+  });
+};
+
+const cancelRunSafely = async (runId, reason) => {
+  if (!runId) {
+    return;
+  }
+
+  try {
+    await runs.cancel(runId);
+    console.warn("[server] canceled Trigger run before direct SMTP fallback", {
+      runId,
+      reason,
+    });
+  } catch (error) {
+    console.warn("[server] unable to cancel Trigger run before fallback", {
+      runId,
+      reason,
+      error,
+    });
+  }
 };
 
 const normalizeLeadPayload = (input) => {
@@ -449,18 +735,47 @@ const getBookingSettings = () => {
   };
 };
 
-const getCalendarClient = () => {
+const getWebsiteGoogleConfig = () => ({
+  clientId: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+  calendarId: process.env.GOOGLE_CALENDAR_ID,
+});
+
+const createCalendarClient = (googleConfig) => {
   const authClient = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
+    googleConfig.clientId,
+    googleConfig.clientSecret
   );
   authClient.setCredentials({
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    refresh_token: googleConfig.refreshToken,
   });
   return google.calendar({
     version: "v3",
     auth: authClient,
   });
+};
+
+const getCalendarClient = () => createCalendarClient(getWebsiteGoogleConfig());
+
+const getCalendarScope = (scopeName = "website") => {
+  if (scopeName === "field") {
+    const googleConfig = getFieldLeadGoogleConfig();
+    return {
+      name: "field",
+      settings: getBookingSettings(),
+      calendarClient: createCalendarClient(googleConfig),
+      calendarId: googleConfig.calendarId,
+    };
+  }
+
+  const googleConfig = getWebsiteGoogleConfig();
+  return {
+    name: "website",
+    settings: getBookingSettings(),
+    calendarClient: createCalendarClient(googleConfig),
+    calendarId: googleConfig.calendarId,
+  };
 };
 
 const getBusyIntervals = async (calendarClient, calendarId, timezone, timeMinIso, timeMaxIso) => {
@@ -497,19 +812,17 @@ const isSlotWithinBookingWindow = (options) =>
 const slotOverlapsBusyInterval = (slotStartMs, slotEndMs, busyIntervals) =>
   busyIntervals.some((busy) => slotStartMs < busy.endMs && slotEndMs > busy.startMs);
 
-const buildAvailabilityForMonthDirect = async (month) => {
-  const settings = getBookingSettings();
+const buildAvailabilityForMonthForScope = async (scope, month) => {
+  const settings = scope.settings;
   const monthStart = DateTime.fromFormat(month, "yyyy-MM", { zone: settings.timezone }).startOf("month");
   if (!monthStart.isValid) {
     throw new Error("Month must be in YYYY-MM format.");
   }
 
   const monthEnd = monthStart.endOf("month");
-  const calendarClient = getCalendarClient();
-  const calendarId = process.env.GOOGLE_CALENDAR_ID;
   const busyIntervals = await getBusyIntervals(
-    calendarClient,
-    calendarId,
+    scope.calendarClient,
+    scope.calendarId,
     settings.timezone,
     monthStart.startOf("day").toUTC().toISO(),
     monthEnd.endOf("day").toUTC().toISO()
@@ -571,6 +884,9 @@ const buildAvailabilityForMonthDirect = async (month) => {
     availableDates,
   };
 };
+
+const buildAvailabilityForMonthDirect = async (month) =>
+  buildAvailabilityForMonthForScope(getCalendarScope("website"), month);
 
 const normalizeManageActor = (value) => {
   const normalized = String(value || "").trim().toLowerCase();
@@ -700,6 +1016,70 @@ const getManagePermissions = (options) => {
   };
 };
 
+const getConfiguredManageCalendarScopes = () => {
+  const scopes = [];
+
+  if (MISSING_GOOGLE_ENV_VARS.length === 0) {
+    scopes.push(getCalendarScope("website"));
+  }
+
+  if (getMissingFieldLeadGoogleEnvVars().length === 0) {
+    scopes.push(getCalendarScope("field"));
+  }
+
+  return scopes;
+};
+
+const ensureManageGoogleCalendarConfigured = (res) => {
+  if (getConfiguredManageCalendarScopes().length > 0) {
+    return true;
+  }
+
+  res.status(500).json({
+    message: "Server is missing required Google Calendar configuration for both website and field booking lanes.",
+  });
+  return false;
+};
+
+const resolveManageCalendarScope = async ({ eventId, actor, token }) => {
+  const scopes = getConfiguredManageCalendarScopes();
+  if (scopes.length === 0) {
+    throw new Error("Server is missing required Google Calendar configuration for both website and field booking lanes.");
+  }
+
+  let sawExistingEvent = false;
+  for (const scope of scopes) {
+    let event = null;
+    try {
+      event = await getCalendarEventById(scope.calendarClient, scope.calendarId, eventId);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Booking could not be found.") {
+        continue;
+      }
+      throw error;
+    }
+
+    const privateProps = normalizePrivateProps(event);
+    const expectedToken =
+      actor === "client" ? privateProps[MANAGE_CLIENT_TOKEN_KEY] : privateProps[MANAGE_CARTER_TOKEN_KEY];
+    if (expectedToken && token === expectedToken) {
+      return {
+        scope,
+        event,
+        privateProps,
+      };
+    }
+
+    sawExistingEvent = true;
+  }
+
+  if (sawExistingEvent) {
+    throw new Error("Booking management link is invalid or expired.");
+  }
+
+  throw new Error("Booking could not be found.");
+};
+
 const getManageEventContextDirect = async (
   payload,
   options = {
@@ -714,15 +1094,8 @@ const getManageEventContextDirect = async (
     throw new Error("Booking management link is invalid or expired.");
   }
 
-  const settings = getBookingSettings();
-  const calendarClient = getCalendarClient();
-  const calendarId = process.env.GOOGLE_CALENDAR_ID;
-  const event = await getCalendarEventById(calendarClient, calendarId, eventId);
-  const privateProps = normalizePrivateProps(event);
-  const expectedToken = actor === "client" ? privateProps[MANAGE_CLIENT_TOKEN_KEY] : privateProps[MANAGE_CARTER_TOKEN_KEY];
-  if (!expectedToken || token !== expectedToken) {
-    throw new Error("Booking management link is invalid or expired.");
-  }
+  const { scope, event, privateProps } = await resolveManageCalendarScope({ eventId, actor, token });
+  const settings = scope.settings;
 
   const display = getEventDisplayDetails(event, settings.timezone);
   const permissions = getManagePermissions({
@@ -751,6 +1124,11 @@ const getManageEventContextDirect = async (
   return {
     actor,
     eventId,
+    scopeName: scope.name,
+    scope,
+    settings,
+    calendarClient: scope.calendarClient,
+    calendarId: scope.calendarId,
     event,
     privateProps,
     summary: String(event.summary || "Midtown Painting Home Services Consultation").trim(),
@@ -768,6 +1146,7 @@ const queueBookingConfirmationEmail = async (payload, eventId) => {
   try {
     const handle = await tasks.trigger("booking-send-confirmation-email", payload, {
       ttl: process.env.BOOKING_CONFIRMATION_EMAIL_TTL || "2h",
+      machine: getNotificationTaskMachine(),
     });
     console.log("[server] queued booking confirmation email task", {
       runId: getRunIdFromHandle(handle),
@@ -782,8 +1161,8 @@ const queueBookingConfirmationEmail = async (payload, eventId) => {
 };
 
 const queueBookingReminders = async (options) => {
-  const reminderRunTtl = process.env.BOOKING_REMINDER_RUN_TTL || "24h";
   const nowInBookingTimezone = DateTime.now().setZone(options.timezone);
+  const notificationTaskMachine = getNotificationTaskMachine();
   const reminderConfigs = [
     {
       reminderMinutesBefore: Number(process.env.BOOKING_REMINDER_1_MINUTES_BEFORE || 60),
@@ -818,12 +1197,16 @@ const queueBookingReminders = async (options) => {
       }
 
       const reminderAt = options.slotStart.minus({ minutes: reminderConfig.reminderMinutesBefore });
+      const reminderRunTtl = getReminderRunTtl(reminderAt, nowInBookingTimezone);
       const triggerOptions = {
         ttl: reminderRunTtl,
       };
       const delayApplied = reminderAt > nowInBookingTimezone;
       if (delayApplied) {
         triggerOptions.delay = reminderAt.toJSDate();
+      }
+      if (reminderConfig.sendEmail) {
+        triggerOptions.machine = notificationTaskMachine;
       }
 
       try {
@@ -887,6 +1270,7 @@ const queueManageNotifications = async (payload, metadata) => {
   try {
     const handle = await tasks.trigger("booking-send-manage-notifications", payload, {
       ttl: process.env.BOOKING_MANAGE_NOTIFICATIONS_TTL || "2h",
+      machine: getNotificationTaskMachine(),
     });
     console.log("[server] queued manage-booking notifications task", {
       runId: getRunIdFromHandle(handle),
@@ -910,6 +1294,36 @@ const queueManageNotifications = async (payload, metadata) => {
   }
 
   return notifications;
+};
+
+const syncFieldLeadManageRow = async ({ privateProps, eventId, patch, action }) => {
+  if (!isFieldLeadPrivateProps(privateProps)) {
+    return;
+  }
+
+  try {
+    const rowSync = await syncFieldLeadRowPatch({
+      eventId,
+      privateProps,
+      patch,
+      getFieldLeadRow,
+      getFieldLeadRowByBookedEventId,
+      updateFieldLeadRowByNumber,
+    });
+
+    if (!rowSync.ok) {
+      console.warn("[field-lead] unable to find field lead row for manage sync", {
+        action,
+        eventId,
+      });
+    }
+  } catch (error) {
+    console.warn("[field-lead] unable to sync manage update back to field lead store", {
+      action,
+      eventId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 };
 
 const bookCalendarSlotDirect = async (payload) => {
@@ -1177,12 +1591,11 @@ const cancelManageBookingDirect = async (payload) => {
   const context = await getManageEventContextDirect(payload, {
     requireCancelable: true,
   });
-  const calendarClient = getCalendarClient();
-  const calendarId = process.env.GOOGLE_CALENDAR_ID;
   const actorLabel = context.actor === "client" ? "Client" : "Carter";
+  const managedAtIso = DateTime.now().toUTC().toISO();
 
-  await calendarClient.events.patch({
-    calendarId,
+  await context.calendarClient.events.patch({
+    calendarId: context.calendarId,
     eventId: context.eventId,
     sendUpdates: getGoogleSendUpdatesMode(),
     requestBody: {
@@ -1199,25 +1612,51 @@ const cancelManageBookingDirect = async (payload) => {
     },
   });
 
-  const notifications = await queueManageNotifications(
-    {
-      action: "cancelled",
-      actor: context.actor,
-      reason,
-      summary: context.summary,
-      previousDisplay: context.display,
-      clientName: context.clientName,
-      clientEmail: context.clientEmail,
-      clientPhone: context.clientPhone,
-      ownerEmail: getOwnerBookingEmail(),
-      ownerPhone: normalizePhoneForTwilio(process.env.BOOKING_OWNER_PHONE),
+  await syncFieldLeadManageRow({
+    privateProps: context.privateProps,
+    eventId: context.eventId,
+    action: "cancel",
+    patch: {
+      status: "cancelled",
+      appointmentStatus: "cancelled",
+      bookedSlotStartIso: context.display.startIso,
+      bookedEventId: context.eventId,
+      lastManagedAtIso: managedAtIso,
+      lastManagedBy: context.actor,
+      lastManagedReason: reason,
     },
-    {
-      eventId: context.eventId,
-      action: "cancel",
-      actor: context.actor,
-    }
-  );
+  });
+
+  const notifications = isFieldLeadPrivateProps(context.privateProps)
+    ? await sendFieldLeadManageNotificationsDirect({
+        action: "cancelled",
+        actor: context.actor,
+        customerName: context.clientName,
+        customerPhone: context.clientPhone,
+        ownerEmail: getFieldLeadOwnerEmail(),
+        ownerPhone: normalizePhoneForTwilio(getFieldLeadOwnerPhone()),
+        reason,
+        previousDisplay: context.display,
+      })
+    : await queueManageNotifications(
+        {
+          action: "cancelled",
+          actor: context.actor,
+          reason,
+          summary: context.summary,
+          previousDisplay: context.display,
+          clientName: context.clientName,
+          clientEmail: context.clientEmail,
+          clientPhone: context.clientPhone,
+          ownerEmail: getOwnerBookingEmail(),
+          ownerPhone: normalizePhoneForTwilio(process.env.BOOKING_OWNER_PHONE),
+        },
+        {
+          eventId: context.eventId,
+          action: "cancel",
+          actor: context.actor,
+        }
+      );
 
   return {
     ok: true,
@@ -1243,9 +1682,8 @@ const rescheduleManageBookingDirect = async (payload) => {
   const context = await getManageEventContextDirect(payload, {
     requireReschedulable: true,
   });
-  const settings = getBookingSettings();
-  const calendarClient = getCalendarClient();
-  const calendarId = process.env.GOOGLE_CALENDAR_ID;
+  const settings = context.settings;
+  const managedAtIso = DateTime.now().toUTC().toISO();
   const newSlotStartIso = String(payload.newSlotStartIso || "").trim();
   if (!newSlotStartIso) {
     throw new Error("Please select a new time slot.");
@@ -1292,8 +1730,8 @@ const rescheduleManageBookingDirect = async (payload) => {
   }
 
   const busyIntervals = await getBusyIntervals(
-    calendarClient,
-    calendarId,
+    context.calendarClient,
+    context.calendarId,
     settings.timezone,
     newStart.minus({ minutes: 1 }).toUTC().toISO(),
     newEnd.plus({ minutes: 1 }).toUTC().toISO()
@@ -1317,8 +1755,8 @@ const rescheduleManageBookingDirect = async (payload) => {
   }
 
   const actorLabel = context.actor === "client" ? "Client" : "Carter";
-  const patchResponse = await calendarClient.events.patch({
-    calendarId,
+  const patchResponse = await context.calendarClient.events.patch({
+    calendarId: context.calendarId,
     eventId: context.eventId,
     sendUpdates: getGoogleSendUpdatesMode(),
     requestBody: {
@@ -1347,26 +1785,54 @@ const rescheduleManageBookingDirect = async (payload) => {
 
   const updatedEvent = patchResponse.data;
   const updatedDisplay = getEventDisplayDetails(updatedEvent, settings.timezone);
-  const notifications = await queueManageNotifications(
-    {
-      action: "rescheduled",
-      actor: context.actor,
-      reason,
-      summary: String(updatedEvent.summary || context.summary).trim(),
-      previousDisplay: context.display,
-      nextDisplay: updatedDisplay,
-      clientName: context.clientName,
-      clientEmail: context.clientEmail,
-      clientPhone: context.clientPhone,
-      ownerEmail: getOwnerBookingEmail(),
-      ownerPhone: normalizePhoneForTwilio(process.env.BOOKING_OWNER_PHONE),
+
+  await syncFieldLeadManageRow({
+    privateProps: context.privateProps,
+    eventId: context.eventId,
+    action: "reschedule",
+    patch: {
+      status: "booked",
+      appointmentStatus: "rescheduled",
+      bookedSlotStartIso: updatedDisplay.startIso,
+      bookedEventId: context.eventId,
+      lastManagedAtIso: managedAtIso,
+      lastManagedBy: context.actor,
+      lastManagedReason: reason,
     },
-    {
-      eventId: context.eventId,
-      action: "reschedule",
-      actor: context.actor,
-    }
-  );
+  });
+
+  const notifications = isFieldLeadPrivateProps(context.privateProps)
+    ? await sendFieldLeadManageNotificationsDirect({
+        action: "rescheduled",
+        actor: context.actor,
+        customerName: context.clientName,
+        customerPhone: context.clientPhone,
+        ownerEmail: getFieldLeadOwnerEmail(),
+        ownerPhone: normalizePhoneForTwilio(getFieldLeadOwnerPhone()),
+        reason,
+        previousDisplay: context.display,
+        nextDisplay: updatedDisplay,
+      })
+    : await queueManageNotifications(
+        {
+          action: "rescheduled",
+          actor: context.actor,
+          reason,
+          summary: String(updatedEvent.summary || context.summary).trim(),
+          previousDisplay: context.display,
+          nextDisplay: updatedDisplay,
+          clientName: context.clientName,
+          clientEmail: context.clientEmail,
+          clientPhone: context.clientPhone,
+          ownerEmail: getOwnerBookingEmail(),
+          ownerPhone: normalizePhoneForTwilio(process.env.BOOKING_OWNER_PHONE),
+        },
+        {
+          eventId: context.eventId,
+          action: "reschedule",
+          actor: context.actor,
+        }
+      );
 
   return {
     ok: true,
@@ -1393,6 +1859,7 @@ const getManageContextDirect = async ({ eventId, actor, token }) => {
     ok: true,
     message: "Booking loaded.",
     actor: context.actor,
+    scope: context.scopeName,
     booking: {
       eventId: context.eventId,
       status: String(context.event.status || "confirmed").toLowerCase(),
@@ -1412,6 +1879,16 @@ const getManageContextDirect = async ({ eventId, actor, token }) => {
       reason: context.permissions.reason,
     },
   };
+};
+
+const getManageAvailabilityDirect = async ({ eventId, actor, token, month }) => {
+  const context = await getManageEventContextDirect(
+    { eventId, actor, token },
+    {
+      requireReschedulable: true,
+    }
+  );
+  return buildAvailabilityForMonthForScope(context.scope, month);
 };
 
 const ensureTriggerConfigured = (res) => {
@@ -1734,7 +2211,7 @@ if (process.env.CORS_ORIGIN) {
     })
   );
 } else {
-  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const isProduction = isProductionRuntime();
   if (isProduction) {
     console.error(
       "[server] CRITICAL: CORS_ORIGIN is not set in production. Set CORS_ORIGIN to your domain (e.g. https://midtownpaintinghomeservices.ca). Defaulting to restrictive localhost origins."
@@ -1785,13 +2262,34 @@ const manageLimiter = rateLimit({
 
 app.use(globalLimiter);
 app.use(express.json({ limit: "1mb" }));
+registerFieldLeadRoutes({
+  app,
+  service: fieldLeadService,
+  hooks: {
+    acquireSlotLock: acquireBookingSlotLock,
+    clearCalendarAvailabilityCache,
+    clearManageContextCacheForEvent,
+  },
+});
 
 app.get("/api/health", (_req, res) => {
+  const fieldLeadRuntimeConfig = getFieldLeadRuntimeConfig();
   res.json({
     ok: true,
     triggerConfigured: MISSING_TRIGGER_ENV_VARS.length === 0,
+    triggerSecretScope: getTriggerSecretScope(),
+    quoteDispatchMode: getQuoteDispatchMode(),
     smtpConfigured: MISSING_SMTP_ENV_VARS.length === 0,
     googleCalendarConfigured: MISSING_GOOGLE_ENV_VARS.length === 0,
+    fieldLeadConfigured: fieldLeadRuntimeConfig.fieldLeadConfigured,
+    fieldLeadStoreConfigured: fieldLeadRuntimeConfig.fieldLeadStoreConfigured,
+    fieldLeadTriggerConfigured: fieldLeadRuntimeConfig.fieldLeadTriggerConfigured,
+    fieldLeadTwilioConfigured: fieldLeadRuntimeConfig.fieldLeadTwilioConfigured,
+    fieldLeadFollowupConfigured: fieldLeadRuntimeConfig.fieldLeadFollowupConfigured,
+    fieldLeadLocalOnly: fieldLeadRuntimeConfig.fieldLeadLocalOnly,
+    fieldLeadPreviewOutboundOverrideEnabled:
+      fieldLeadRuntimeConfig.fieldLeadPreviewOutboundOverrideEnabled,
+    fieldRepCount: fieldLeadRuntimeConfig.repOptions.length,
     availabilityCache: {
       enabled: CALENDAR_AVAILABILITY_CACHE_TTL_MS > 0,
       ttlMs: CALENDAR_AVAILABILITY_CACHE_TTL_MS,
@@ -1830,7 +2328,7 @@ app.post(
   },
   async (req, res, next) => {
     try {
-      if (!ensureTriggerConfigured(res)) {
+      if (!shouldUseDirectQuoteDispatch() && !ensureTriggerConfigured(res)) {
         return;
       }
 
@@ -1910,7 +2408,7 @@ app.post(
         contentBase64: file.buffer.toString("base64"),
       }));
 
-      const handle = await tasks.trigger("send-quote-email", {
+      const quotePayload = {
         fullName,
         phone,
         phoneCountryCode,
@@ -1927,13 +2425,50 @@ app.post(
         callGoal,
         images,
         submittedAtIso: new Date().toISOString(),
-      });
+      };
 
-      await waitForRunOutput(handle);
+      if (shouldUseDirectQuoteDispatch()) {
+        const info = await sendQuoteEmailDirect(quotePayload);
+        console.log("[server] quote email sent directly via SMTP dispatch mode", {
+          messageId: info?.messageId,
+          mode: getQuoteDispatchMode(),
+        });
+        res.status(200).json({
+          message: "Quote request sent successfully.",
+        });
+        return;
+      }
 
-      res.status(200).json({
-        message: "Quote request sent successfully.",
-      });
+      let handle = null;
+      try {
+        handle = await tasks.trigger("send-quote-email", quotePayload);
+        await waitForRunOutput(handle);
+        res.status(200).json({
+          message: "Quote request sent successfully.",
+        });
+        return;
+      } catch (error) {
+        const runId = getRunIdFromHandle(handle);
+        const taskMessage = error instanceof Error ? error.message : String(error ?? "");
+        const statusCode = mapTaskErrorToStatusCode(taskMessage);
+
+        if (statusCode >= 500 && MISSING_SMTP_ENV_VARS.length === 0) {
+          await cancelRunSafely(runId, "trigger_task_error_fallback");
+          const info = await sendQuoteEmailDirect(quotePayload);
+          console.warn("[server] quote email sent via direct SMTP fallback after Trigger task error", {
+            runId,
+            messageId: info?.messageId,
+            statusCode,
+            taskMessage,
+          });
+          res.status(200).json({
+            message: "Quote request sent successfully.",
+          });
+          return;
+        }
+
+        throw error;
+      }
     } catch (error) {
       next(error);
     }
@@ -2068,7 +2603,7 @@ app.post("/api/calendar/booking", bookingLimiter, async (req, res, next) => {
 
 app.get("/api/calendar/manage/context", manageLimiter, async (req, res, next) => {
   try {
-    if (!ensureGoogleCalendarConfigured(res)) {
+    if (!ensureManageGoogleCalendarConfigured(res)) {
       return;
     }
 
@@ -2100,9 +2635,34 @@ app.get("/api/calendar/manage/context", manageLimiter, async (req, res, next) =>
   }
 });
 
+app.get("/api/calendar/manage/availability", manageLimiter, async (req, res, next) => {
+  try {
+    if (!ensureManageGoogleCalendarConfigured(res)) {
+      return;
+    }
+
+    const eventId = normalizeText(req.query.eventId);
+    const actor = normalizeText(req.query.actor).toLowerCase();
+    const token = normalizeText(req.query.token);
+    const month = normalizeText(req.query.month);
+
+    if (!eventId || !actor || !token || !month) {
+      res.status(400).json({
+        message: "Missing required manage details.",
+      });
+      return;
+    }
+
+    const output = await getManageAvailabilityDirect({ eventId, actor, token, month });
+    res.status(200).json(output);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/calendar/manage/cancel", manageLimiter, async (req, res, next) => {
   try {
-    if (!ensureGoogleCalendarConfigured(res)) {
+    if (!ensureManageGoogleCalendarConfigured(res)) {
       return;
     }
 
@@ -2135,7 +2695,7 @@ app.post("/api/calendar/manage/cancel", manageLimiter, async (req, res, next) =>
 
 app.post("/api/calendar/manage/reschedule", manageLimiter, async (req, res, next) => {
   try {
-    if (!ensureGoogleCalendarConfigured(res)) {
+    if (!ensureManageGoogleCalendarConfigured(res)) {
       return;
     }
 
@@ -2183,6 +2743,13 @@ app.post("/api/calendar/manage/reschedule", manageLimiter, async (req, res, next
 });
 
 app.use((error, _req, res, _next) => {
+  if (error && typeof error === "object" && "type" in error && error.type === "entity.parse.failed") {
+    res.status(400).json({
+      message: "Invalid request payload. Please refresh and try again.",
+    });
+    return;
+  }
+
   if (error instanceof multer.MulterError) {
     if (error.code === "LIMIT_FILE_SIZE") {
       res.status(400).json({
@@ -2214,6 +2781,21 @@ app.use((error, _req, res, _next) => {
   if (error instanceof Error) {
     const statusCode = mapTaskErrorToStatusCode(error.message);
     if (statusCode !== 500) {
+      if (statusCode >= 500) {
+        console.error("[server] Task orchestration error", {
+          statusCode,
+          message: error.message,
+          error,
+        });
+        res.status(statusCode).json({
+          message:
+            statusCode === 503
+              ? GENERIC_ORCHESTRATION_FAILURE_MESSAGE
+              : GENERIC_TEMPORARY_FAILURE_MESSAGE,
+        });
+        return;
+      }
+
       res.status(statusCode).json({
         message: error.message,
       });
@@ -2223,12 +2805,12 @@ app.use((error, _req, res, _next) => {
 
   console.error("[server] Unexpected server error", error);
   res.status(500).json({
-    message: "Unable to process your request right now. Please try again.",
+    message: GENERIC_TEMPORARY_FAILURE_MESSAGE,
   });
 });
 
 const logStartupEnvironmentWarnings = () => {
-  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  const isProduction = isProductionRuntime();
   const severity = isProduction ? "error" : "warn";
 
   if (MISSING_GOOGLE_ENV_VARS.length > 0) {
@@ -2247,6 +2829,12 @@ const logStartupEnvironmentWarnings = () => {
   if (missingTwilioVars.length > 0) {
     console.warn(
       `[server] Missing Twilio env vars (SMS notifications disabled): ${missingTwilioVars.join(", ")}`
+    );
+  }
+
+  if (isProduction && getTriggerSecretScope() === "dev") {
+    console.error(
+      "[server] CRITICAL: TRIGGER_SECRET_KEY is a development key in production. Use a production Trigger secret to keep booking/reminder Trigger orchestration in the correct environment."
     );
   }
 };
@@ -2298,3 +2886,4 @@ if (isDirectExecution) {
 }
 
 export default app;
+export { startServer };
