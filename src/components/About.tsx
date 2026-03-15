@@ -60,7 +60,7 @@ const About = () => {
                             Hi, my name is Carter Jenkins, a second-year Economics student at McGill University. With four years in the painting industry and three running my own business, I'm passionate about entrepreneurship and helping homeowners completely transform their spaces.
                         </p>
                         <p>
-                            My experience at St. Michael's College School—as a student ambassador, prefect, and Varsity hockey player—instilled the rigorous discipline and strong work ethic I bring to every project. Last summer, our returning team completed 70+ projects with a perfect 5-star rating. This year, my goal is to exceed 130+ projects while maintaining our uncompromising standards of quality and sheer professionalism.
+                            My experience at St. Michael's College School—as a student ambassador, prefect, and Leaside hockey player—instilled the rigorous discipline and strong work ethic I bring to every project. Last summer, our returning team completed 70+ projects with a perfect 5-star rating. This year, my goal is to exceed 130+ projects while maintaining our uncompromising standards of quality and sheer professionalism.
                         </p>
                         <p>
                             Supported by the Student Works Management Program, my team and I strictly employ high-quality materials to deliver flawless, lasting finishes. Your satisfaction is not just a goal; it's our absolute priority.

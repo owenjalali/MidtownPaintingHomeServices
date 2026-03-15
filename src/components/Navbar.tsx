@@ -41,7 +41,7 @@ const Navbar = () => {
                     <img
                         src="/images/logo-midtown.png"
                         alt="Midtown Painting Home Services"
-                        className="h-10 sm:h-14 lg:h-[7.5rem] w-auto object-contain drop-shadow-md"
+                        className="h-10 sm:h-14 lg:h-16 w-auto object-contain drop-shadow-md"
                         loading="eager"
                         decoding="async"
                         fetchPriority="high"
