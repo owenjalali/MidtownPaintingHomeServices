@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   buildStaticVercelEnvEntries,
   buildVercelEnvEntries,
+  getVercelCliScopeArgs,
   readEnvFile,
 } from "./vercelFieldEnvSync.mjs";
 
@@ -112,4 +113,22 @@ test("buildStaticVercelEnvEntries creates encrypted entries for activation value
       target: ["production"],
     },
   ]);
+});
+
+test("getVercelCliScopeArgs returns a scope flag only when VERCEL_SCOPE is set", () => {
+  const original = process.env.VERCEL_SCOPE;
+
+  try {
+    delete process.env.VERCEL_SCOPE;
+    assert.deepEqual(getVercelCliScopeArgs(), []);
+
+    process.env.VERCEL_SCOPE = "owenjalalis-projects";
+    assert.deepEqual(getVercelCliScopeArgs(), ["--scope", "owenjalalis-projects"]);
+  } finally {
+    if (typeof original === "string") {
+      process.env.VERCEL_SCOPE = original;
+    } else {
+      delete process.env.VERCEL_SCOPE;
+    }
+  }
 });

@@ -211,6 +211,31 @@ const refreshVercelCliAuth = () => {
   }
 };
 
+export const getVercelCliScopeArgs = () => {
+  const scope = normalizeText(process.env.VERCEL_SCOPE);
+  return scope ? ["--scope", scope] : [];
+};
+
+const runVercelCliCommand = ({ args, input = "" }) => {
+  const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+  const result = spawnSync(npxCommand, ["vercel", ...args], {
+    cwd: process.cwd(),
+    env: process.env,
+    input,
+    encoding: "utf8",
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    throw new Error(
+      normalizeText(result.stderr) || normalizeText(result.stdout) || `Vercel CLI command failed (${result.status ?? "unknown"}).`
+    );
+  }
+};
+
 const resolveAuthToken = () => {
   const directToken = normalizeText(process.env.VERCEL_TOKEN);
   if (directToken) {
@@ -296,28 +321,65 @@ const syncVercelEnvEntries = async ({ projectId, teamId, token, entries }) => {
   }
 };
 
-export const runVercelEnvSync = async ({ entries }) => {
-  let { token, source } = resolveAuthToken();
-  const project = resolveProjectConfig();
+const syncVercelEnvEntriesWithCli = ({ entries }) => {
+  const scopeArgs = getVercelCliScopeArgs();
 
-  try {
-    await syncVercelEnvEntries({
-      ...project,
-      token,
-      entries,
+  for (const entry of entries) {
+    const target = normalizeText(Array.isArray(entry.target) ? entry.target[0] : entry.target);
+    if (!target) {
+      throw new Error(`Missing Vercel env target for ${entry.key}.`);
+    }
+
+    runVercelCliCommand({
+      args: [
+        "env",
+        "add",
+        entry.key,
+        target,
+        "--yes",
+        "--force",
+        ...scopeArgs,
+      ],
+      input: entry.value,
     });
-  } catch (error) {
-    if (source !== "env" && isInvalidTokenError(error)) {
-      refreshVercelCliAuth();
-      ({ token, source } = resolveAuthToken());
+  }
+};
+
+export const runVercelEnvSync = async ({ entries }) => {
+  try {
+    let { token, source } = resolveAuthToken();
+    const project = resolveProjectConfig();
+
+    try {
       await syncVercelEnvEntries({
         ...project,
         token,
         entries,
       });
-    } else {
-      throw error;
+    } catch (error) {
+      if (source !== "env" && isInvalidTokenError(error)) {
+        refreshVercelCliAuth();
+        ({ token, source } = resolveAuthToken());
+        await syncVercelEnvEntries({
+          ...project,
+          token,
+          entries,
+        });
+      } else {
+        throw error;
+      }
     }
+  } catch (apiError) {
+    syncVercelEnvEntriesWithCli({ entries });
+
+    return {
+      ok: true,
+      syncedCount: entries.length,
+      syncedKeys: entries.map((entry) => entry.key),
+      target: Array.from(new Set(entries.flatMap((entry) => entry.target || []))),
+      syncMethod: "cli-fallback",
+      apiFallbackReason: apiError instanceof Error ? apiError.message : String(apiError),
+    };
   }
 
   return {
@@ -325,5 +387,6 @@ export const runVercelEnvSync = async ({ entries }) => {
     syncedCount: entries.length,
     syncedKeys: entries.map((entry) => entry.key),
     target: Array.from(new Set(entries.flatMap((entry) => entry.target || []))),
+    syncMethod: "api",
   };
 };
