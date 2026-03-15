@@ -25,7 +25,7 @@
     "sync:vercel:field-prod-activate": "node server/scripts/activateVercelFieldProductionEnv.mjs",
     "backfill:manage-links": "node server/scripts/backfillManageLinks.mjs",
     "deploy:trigger": "trigger deploy",
-    "deploy:trigger:prod": "npx trigger.dev@latest deploy --env prod --env-file prod.env",
+    "deploy:trigger:prod": "trigger deploy --env prod --env-file prod.env",
     "preview": "vite preview"
   },
   "dependencies": {
