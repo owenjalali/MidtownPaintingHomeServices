@@ -9,6 +9,19 @@ const MAX_HEALTH_WAIT_MS = Number(process.env.SMOKE_MAX_HEALTH_WAIT_MS || 120000
 const HEALTH_POLL_MS = Number(process.env.SMOKE_HEALTH_POLL_MS || 1500);
 const MAX_AVAILABILITY_WAIT_MS = Number(process.env.SMOKE_MAX_AVAILABILITY_WAIT_MS || 180000);
 const MAX_MONTH_LOOKAHEAD = 6;
+const STRESS_CUSTOMER_PHONE = String(
+  process.env.STRESS_CUSTOMER_PHONE ||
+    process.env.SMOKE_CUSTOMER_PHONE ||
+    process.env.BOOKING_OWNER_PHONE ||
+    ""
+).trim();
+const STRESS_CUSTOMER_EMAIL = String(
+  process.env.STRESS_CUSTOMER_EMAIL ||
+    process.env.SMOKE_CUSTOMER_EMAIL ||
+    process.env.BOOKING_OWNER_EMAIL ||
+    process.env.QUOTE_TO_EMAIL ||
+    ""
+).trim();
 
 const monthParamFromDate = (date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -178,6 +191,18 @@ const parseManageLink = (link) => {
   };
 };
 
+const createAliasedEmail = ({ baseEmail, alias }) => {
+  const normalized = String(baseEmail || "").trim();
+  const separatorIndex = normalized.lastIndexOf("@");
+  if (separatorIndex <= 0 || separatorIndex === normalized.length - 1) {
+    return normalized;
+  }
+
+  const localPart = normalized.slice(0, separatorIndex).replace(/\+.*/, "");
+  const domainPart = normalized.slice(separatorIndex + 1);
+  return `${localPart}+${alias}@${domainPart}`;
+};
+
 const loadContext = async ({ eventId, actor, token }) => {
   const params = new URLSearchParams({ eventId, actor, token });
   return requestApi(`/api/calendar/manage/context?${params.toString()}`);
@@ -185,13 +210,17 @@ const loadContext = async ({ eventId, actor, token }) => {
 
 const createBookingPayload = ({ slotStartIso, prefix }) => {
   const id = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const emailAlias = `${prefix.toLowerCase().replace(/\s+/g, "")}${id}`;
   return {
     slotStartIso,
     fullName: `${prefix} ${id}`,
-    phone: "+16475108718",
+    phone: STRESS_CUSTOMER_PHONE,
     phoneCountryCode: "+1",
-    phoneNationalNumber: "6475108718",
-    email: `owenjalali70+${prefix.toLowerCase().replace(/\s+/g, "")}${id}@gmail.com`,
+    phoneNationalNumber: STRESS_CUSTOMER_PHONE.replace(/\D/g, "").replace(/^1/, ""),
+    email: createAliasedEmail({
+      baseEmail: STRESS_CUSTOMER_EMAIL,
+      alias: emailAlias,
+    }),
     addressLine1: "123 Stress Test Ave",
     city: "Toronto",
     postalCode: "M5V2T6",
@@ -506,6 +535,15 @@ const main = async () => {
     durationMs: health.durationMs,
     body: health.body,
   };
+
+  assert.ok(
+    STRESS_CUSTOMER_PHONE,
+    "Set STRESS_CUSTOMER_PHONE, SMOKE_CUSTOMER_PHONE, or BOOKING_OWNER_PHONE before running the booking stress report."
+  );
+  assert.ok(
+    STRESS_CUSTOMER_EMAIL,
+    "Set STRESS_CUSTOMER_EMAIL, SMOKE_CUSTOMER_EMAIL, BOOKING_OWNER_EMAIL, or QUOTE_TO_EMAIL before running the booking stress report."
+  );
 
   const candidates = await getAvailabilityCandidates(6);
   report.evidence.initialAvailabilityDiscovery = {
