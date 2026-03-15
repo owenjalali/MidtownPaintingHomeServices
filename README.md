@@ -92,6 +92,7 @@ Included Trigger files:
 - `npm run sync:vercel:field-preview-env` pushes the preview-safe `FIELD_TEST_*` allowlist plus Trigger dev wiring into the linked Vercel Preview environment using your local Vercel auth
 - `npm run sync:vercel:field-prod-env` pushes the non-toggle production `FIELD_*` allowlist from `prod.env` into the linked Vercel Production environment
 - `npm run sync:vercel:field-prod-activate` flips only `FIELD_ENABLED=true` and `FIELD_ALLOW_PRODUCTION=true` in Vercel Production
+  - guardrail: this now refuses to activate if `prod.env` still mirrors key `FIELD_TEST_*` credentials, unless you set `FIELD_PRODUCTION_ALLOW_TEST_MIRROR=true` for an intentional one-time production smoke
 - `npm run deploy:trigger:prod` deploys the Trigger worker to the `prod` environment using `prod.env` as the local secret source
 - Hosted Vercel Preview currently uses the Trigger dev key on purpose. Delayed field SMS/follow-up runs from Preview will stay queued unless a dev worker is connected, so keep `npm run dev:trigger:test` running during preview demos until a dedicated Trigger preview/staging environment exists.
 - `npm run sync:field-crm` one-shot Google Sheets raw-tab migration + CRM rebuild for the active field lane
@@ -109,6 +110,7 @@ Included Trigger files:
 ## Phase 3 Cutover
 
 - Create an ignored `prod.env` from `.env.example` and fill the live website booking credentials, Trigger prod key, and the full production `FIELD_*` namespace. Keep `FIELD_ENABLED` and `FIELD_ALLOW_PRODUCTION` blank there; the activation command owns those flags.
+- Keep `FIELD_PRODUCTION_ALLOW_TEST_MIRROR` blank for real client cutovers. Only set it to `true` for an intentional production smoke while the field lane still mirrors your test credentials.
 - Phase 3 Step 1: ship the newer app code first, then confirm production `/api/health` exposes the field diagnostics while `fieldLeadConfigured=false` and `fieldLeadLocalOnly=false`.
 - Phase 3 Step 1 validation: run `npm run test:smoke:manage` against production with explicit `SMOKE_BASE_URL`, `SMOKE_CUSTOMER_PHONE`, and `SMOKE_CUSTOMER_EMAIL` values so the live quote/calendar path is proven on the new deploy before the field lane is turned on.
 - Phase 3 Step 2: run `npm run sync:vercel:field-prod-env`, then `npm run deploy:trigger:prod`, and verify Trigger prod now has the production `FIELD_*` namespace from the same release artifact.
